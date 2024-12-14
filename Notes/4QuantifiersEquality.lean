@@ -4,5 +4,6 @@
 
 /- SECTION: ∀ -/
 section universal_quantifier
-  --
+  -- We can encode `∀ x : α, p x` by the dependent function type `(x : α) → p x`. This is obvious if you think for a couple of seconds about it.
+  -- Introduction rule is lambda abstraction; Elimination rule is application
 end universal_quantifier
