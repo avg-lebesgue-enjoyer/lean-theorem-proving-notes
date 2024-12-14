@@ -99,7 +99,7 @@ section propositional_logic
   section disjunction
     #print Or
 
-    -- Introduction rules
+    -- Introduction ruless
     #print Or.inl -- *`: ∀ {a b : Prop}, a → a ∨ b`*
     #print Or.inr -- *`: ∀ {a b : Prop}, b → a ∨ b`*
     -- There are
