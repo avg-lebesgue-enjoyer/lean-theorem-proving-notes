@@ -299,6 +299,90 @@ section exercises_no_class
     Iff.intro
       right
       left
+
+  -- EXERCISE: Comm. and
+  example : p ∧ q ↔ q ∧ p :=
+    let gaming : ∀ {α β : Prop}, α ∧ β → β ∧ α := fun h => ⟨h.right, h.left⟩
+    Iff.intro gaming gaming
+
+  -- EXERCISE: Comm. or
+  example : p ∨ q ↔ q ∨ p :=
+    suffices gaming : ∀ {α β : Prop}, α ∨ β → β ∨ α from Iff.intro gaming gaming
+    fun {α β : Prop} (h_avb : α ∨ β) =>
+      h_avb.elim Or.inr Or.inl
+
+  -- EXERCISE: Assoc. and
+  example : (p ∧ q) ∧ r  ↔  p ∧ (q ∧ r) :=
+    have right : (p ∧ q) ∧ r  →  p ∧ (q ∧ r) := fun ⟨⟨hp, hq⟩, hr⟩ => ⟨hp, ⟨hq, hr⟩⟩
+    have left  : p ∧ (q ∧ r)  →  (p ∧ q) ∧ r := fun ⟨hp, ⟨hq, hr⟩⟩ => ⟨⟨hp, hq⟩, hr⟩
+    Iff.intro right left
+
+  -- EXERCISE: Assoc. or
+  example : (p ∨ q) ∨ r  ↔  p ∨ (q ∨ r) :=
+    have right : (p ∨ q) ∨ r  →  p ∨ (q ∨ r) :=
+      fun h_pq_r =>
+        h_pq_r.elim
+          (fun h_pq => h_pq.elim Or.inl (Or.inr ∘ Or.inl))
+          (Or.inr ∘ Or.inr)
+    ;
+    have left  : p ∨ (q ∨ r)  →  (p ∨ q) ∨ r :=
+      fun h_p_qr =>
+        h_p_qr.elim
+          (Or.inl ∘ Or.inl)
+          (fun h_qr => h_qr.elim (Or.inl ∘ Or.inr) Or.inr)
+    ;
+    Iff.intro right left
+
+    -- EXERCISE: ∧ dist. over ∨
+    --    *done already*
+
+    -- EXERCISE: ∨ dist. over ∧
+    example : p ∨ (q ∧ r) ↔ (p ∨ q) ∧ (p ∨ r) :=
+      -- (→)
+      have right : p ∨ (q ∧ r)  →  (p ∨ q) ∧ (p ∨ r) :=
+        fun h_p_v_qr =>
+        h_p_v_qr.elim
+          (fun hp => ⟨Or.inl hp, Or.inl hp⟩)
+          (fun hqr => ⟨Or.inr hqr.left, Or.inr hqr.right⟩)
+      ;
+      -- (←)
+      have left : (p ∨ q) ∧ (p ∨ r)  →  p ∨ (q ∧ r) :=
+        fun ⟨h_pq, h_pr⟩ =>
+          h_pq.elim
+            Or.inl
+            (fun hq =>
+              h_pr.elim
+                Or.inl
+                (fun hr => Or.inr ⟨hq, hr⟩)
+            )
+      ;
+      -- (↔)
+      Iff.intro right left
+
+    -- EXERCISE: Exponential adjunction
+    example : (p → (q → r))  ↔  (p ∧ q → r) :=
+      -- (→)
+      have right : (p → (q → r)) → p ∧ q → r :=
+        fun h_p_2_q2r h_pq =>
+        h_p_2_q2r h_pq.left h_pq.right
+      -- (←)
+      have left : (p ∧ q → r) → p → q → r :=
+        fun h_pq2r hp hq =>
+        h_pq2r ⟨hp, hq⟩
+      -- (↔)
+      Iff.intro right left
+
+    -- EXERCISE: Universal property of the coproduct
+    example : ((p ∨ q) → r)  ↔  (p → r) ∧ (q → r) :=
+      -- (→)
+      have r' (h : ((p ∨ q) → r))  :  (p → r) ∧ (q → r) :=
+        ⟨h ∘ Or.inl, h ∘ Or.inr⟩
+      -- (←)
+      have l' (h : (p → r) ∧ (q → r)) : p ∨ q → r :=
+        fun h_pvq =>
+        h_pvq.elim h.left h.right
+      -- (↔)
+      Iff.intro r' l'
 end exercises_no_class
 
 
