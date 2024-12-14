@@ -115,6 +115,23 @@ section propositional_logic
   end disjunction
 
   section negation
+    #print False
+    #print Not    -- *`Not : Prop → Prop := fun a => (a → False)`*
 
+    def modus_tollens : (p → q)  →  ¬ q  →  ¬ p :=
+      fun hp2q =>
+      fun hnq  =>
+        hnq ∘ hp2q
+
+    -- (No introduction rules for `False`)
+    -- Elimination rule for `False`
+    #print False.elim -- *`: {a : Prop} → False → a`*, the **principle of explosion**, or **universal property of the initial object**
+    -- Often used in this form:
+    example (hp : p) (hnp : ¬ p) : q := False.elim (hnp hp)
+    -- which has the shortcut
+    #check @absurd -- *`: {a b : Prop} → a → ¬a → b`*
+    example (hp : p) (hnp : ¬ p) : q := absurd hp hnp
+
+    -- NOTE: Dually to `False`, `True ≃ 1` has a single introduction rule, `True.intro : True`; this is ofc the **universal property of the terminal object**.
   end negation
 end propositional_logic
