@@ -68,3 +68,39 @@ end theorems
 
 
 /- SECTION: Propositional Logic -/
+
+section propositional_logic
+  variable (p q : Prop)
+
+  section conjunction
+    #print And
+
+    -- Introduction rule
+    #check @And.intro -- *`: ∀ {a b : Prop}, a → b → a ∧ b`*
+    example (hp : p) (hq : q) : p ∧ q := And.intro hp hq
+
+    -- Elimination rules
+    #check @And.left  -- *`: ∀ {a b : Prop}, a ∧ b → a`*
+    #check @And.right -- *`: ∀ {a b : Prop}, a ∧ b → b`*
+    example (hpq : p ∧ q) : q ∧ p :=
+      And.intro
+        hpq.right
+        hpq.left
+
+    -- The constructor `And.intro` is a *constructor* for a `structure`, so it can be used with `⟨anonymous, constructor, notation⟩`
+    def shitpost (hp : p) (hq : q) : p ∧ q := ⟨hp, hq⟩
+    #print shitpost
+
+    -- Nested constructors that right-associate can be flattened. So,
+    example (h : p ∧ q) : q ∧ p ∧ q :=  -- `q ∧ p ∧ q := q ∧ (p ∧ q)`
+      ⟨h.right, h.left, h.right⟩        -- desugars to `⟨h.right, ⟨h.left, h.right⟩⟩`
+  end conjunction
+
+  section disjunction
+    #print Or
+
+    -- Introduction rules
+    #print Or.inl -- *`: ∀ {a b : Prop}, a → a ∨ b`*
+    #print Or.inr -- *`: ∀ {a b : Prop}, b → a ∨ b`*
+  end disjunction
+end propositional_logic
