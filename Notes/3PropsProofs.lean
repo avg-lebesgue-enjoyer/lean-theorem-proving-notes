@@ -134,4 +134,29 @@ section propositional_logic
 
     -- NOTE: Dually to `False`, `True ≃ 1` has a single introduction rule, `True.intro : True`; this is ofc the **universal property of the terminal object**.
   end negation
+
+  section logical_equivalence
+    #print Iff  -- exactly what you think it'd be
+
+    -- Introduction rule
+    #print Iff.intro  -- *`: ∀ {a b : Prop}, (a → b) → (b → a) → (a ↔ b)`*
+
+    -- Elimination rules
+    #print Iff.mp     -- *`: ∀ {a b : Prop}, (a ↔ b) → a → b`*; this is `m`odus `p`onens
+    #print Iff.mpr    -- *`: ∀ {a b : Prop}, (a ↔ b) → b → a`*; this is `m`odus `p`onens in `r`everse.
+
+    theorem and_swap : p ∧ q  ↔  q ∧ p :=
+      Iff.intro -- can be replaced by `⟨⋯, ⋯⟩`.
+        (fun hpq =>
+          show q ∧ p from And.intro hpq.right hpq.left)
+        (fun hqp =>
+          And.intro hqp.right hqp.left)
+  end logical_equivalence
 end propositional_logic
+
+
+
+/- SECTION: Introducing Auxiliary Subgoals -/
+section aux_subgoals
+  -- Shitpost
+end aux_subgoals
