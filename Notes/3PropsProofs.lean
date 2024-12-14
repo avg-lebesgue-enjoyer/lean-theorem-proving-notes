@@ -277,5 +277,40 @@ end stuff_in_lean_stdlib_already
 
 /- EXERCISES: No classical reasoning required -/
 section exercises_no_class
-  -- shitpost
+  variable {p q r : Prop}
+
+  -- EXERCISE: ∧ distributes over ∨
+  example : p ∧ (q ∨ r)  ↔  (p ∧ q) ∨ (p ∧ r) :=
+    -- (←)
+    have left  : (p ∧ q) ∨ (p ∧ r)  →  p ∧ (q ∨ r) :=
+      fun h =>
+        h.elim
+          (fun hpq => ⟨hpq.left, Or.inl hpq.right⟩)
+          (fun hpr => ⟨hpr.left, Or.inr hpr.right⟩)
+    ;
+    -- (→)
+    have right : p ∧ (q ∨ r)        →  (p ∧ q) ∨ (p ∧ r) :=
+      fun h =>
+        h.right.elim
+          (fun hq => Or.inl ⟨h.left , hq⟩)
+          (fun hr => Or.inr ⟨h.left, hr⟩)
+    ;
+    -- (↔)
+    Iff.intro
+      right
+      left
 end exercises_no_class
+
+
+
+/- EXERCISES: Requires classical reasoning -/
+section classy_exercises
+  open Classical
+
+  -- EXERCISE: funny
+  example : ¬(p ∧ ¬q) → p → q :=
+    fun h_n_p_and_nq =>
+    fun h_p =>
+    byContradiction
+      (fun h_nq => h_n_p_and_nq ⟨h_p, h_nq⟩)
+end classy_exercises
