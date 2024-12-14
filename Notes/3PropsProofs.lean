@@ -102,5 +102,6 @@ section propositional_logic
     -- Introduction rules
     #print Or.inl -- *`: ∀ {a b : Prop}, a → a ∨ b`*
     #print Or.inr -- *`: ∀ {a b : Prop}, b → a ∨ b`*
+    -- There are
   end disjunction
 end propositional_logic
