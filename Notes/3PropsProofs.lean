@@ -272,3 +272,10 @@ section stuff_in_lean_stdlib_already
   #check Or.comm
   -- and there's more...
 end stuff_in_lean_stdlib_already
+
+
+
+/- EXERCISES: No classical reasoning required -/
+section exercises_no_class
+  -- shitpost
+end exercises_no_class
