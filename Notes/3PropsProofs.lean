@@ -98,10 +98,23 @@ section propositional_logic
 
   section disjunction
     #print Or
-
-    -- Introduction ruless
     #print Or.inl -- *`: ∀ {a b : Prop}, a → a ∨ b`*
     #print Or.inr -- *`: ∀ {a b : Prop}, b → a ∨ b`*
-    -- There are
+
+    -- Introduction rules
+    #print Or.intro_left  -- *`: ∀ {a b : Prop}, a → a ∨ b`*, longhand for `Or.inl`
+    #print Or.intro_right -- *`: ∀ {a b : Prop}, b → a ∨ b`*, longhand for `Or.inr`
+
+    -- Elimination rule
+    #print Or.elim  -- *`: ∀ {a b c : Prop}, a ∨ b → (a → c) → (b → c) → c`*; the **universal property**.
+
+    example (h : p ∨ q) : q ∨ p :=
+      h.elim
+        (Or.intro_right _)  -- Could replace with `Or.inl`, which takes the `_` and makes it implicit.
+        (Or.intro_left  _)  -- ^^likewise
   end disjunction
+
+  section negation
+
+  end negation
 end propositional_logic
