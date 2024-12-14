@@ -1,2 +1,1 @@
-# lean-theorem-proving-notes
-have
+# notes
