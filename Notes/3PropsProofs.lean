@@ -158,5 +158,17 @@ end propositional_logic
 
 /- SECTION: Introducing Auxiliary Subgoals -/
 section aux_subgoals
-  -- Shitpost
+  variable (p q : Prop)
+
+  -- The `have` construct is pretty much a `let`.
+  example (h : p ∧ q) : q ∧ p :=
+    have hq : q := h.right
+    have hp : p := h.left
+    show q ∧ p from ⟨hq, hp⟩
+
+  -- The `suffices` construct moddles the "it suffices to show" style of argument in normal math.
+  example (h : p ∧ q) : q ∧ p :=
+    have hq : q := h.right
+    suffices hp : p from ⟨hq, hp⟩ -- `suffices a : α from e ; f` takes `e : α → currentGoal` and `f : α` and produces a term of type `currentGoal`.
+    show p from h.left
 end aux_subgoals
