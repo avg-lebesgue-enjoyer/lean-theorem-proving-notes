@@ -55,6 +55,16 @@ section theorems
     fun {p q : Prop} (hp : p) (_ : q) => hp
   #check stupid4
   #print stupid4
+
+  theorem implies_transitive
+    {p q r : Prop}
+    (h₀ : q → r) (h₁ : p → q)
+    : p → r
+    :=
+      fun (hp : p) =>
+      h₀ (h₁ hp)
 end theorems
 
-#check Classical.byContradiction
+
+
+/- SECTION: Propositional Logic -/
