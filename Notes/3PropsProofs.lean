@@ -383,12 +383,84 @@ section exercises_no_class
         h_pvq.elim h.left h.right
       -- (↔)
       Iff.intro r' l'
+
+    -- EXERCISE: DeMorgan's; ¬∨ = ∧¬
+    example : ¬(p ∨ q)  ↔  ¬p ∧ ¬q :=
+      -- (→)
+      have right : ¬(p ∨ q)  →  ¬p ∧ ¬q :=
+        fun h_n_pvq =>
+        ⟨h_n_pvq ∘ Or.inl, h_n_pvq ∘ Or.inr⟩
+      -- (←)
+      have left : ¬p ∧ ¬q  →  ¬(p ∨ q) :=
+        fun ⟨h_np, h_nq⟩ h_pvq =>
+        h_pvq.elim h_np h_nq
+      -- (↔)
+      Iff.intro right left
+
+      -- Exercise: Partial reverse DeMorgan's; ∨¬  → ¬∧
+      example : ¬p ∨ ¬q  →  ¬(p ∧ q) :=
+        fun h_np_v_nq h_pq =>
+        h_np_v_nq.elim
+          (fun h_np => absurd h_pq.left  h_np)
+          (fun h_nq => absurd h_pq.right h_nq)
+
+      -- EXERCISE: Not both true and false
+      example : ¬(p ∧ ¬p) :=
+        fun ⟨h_p, h_np⟩ =>
+        h_np h_p
+
+      -- EXERCISE: Recognising non-implication
+      example : p ∧ ¬q → ¬(p → q) :=
+        fun ⟨h_p, h_nq⟩ h_p2q =>
+          h_nq (h_p2q h_p)
+
+      -- EXERCISE: Absurdity
+      example : ¬p → (p → q) :=
+        fun h_np h_p =>
+        False.elim $ h_np h_p
+
+      -- EXERCISE: Recognising implication
+      example : (¬p ∨ q) → (p → q) :=
+        fun h_np_v_q h_p =>
+        h_np_v_q.elim
+          (absurd h_p)
+          id
+
+      -- EXERCISE: False neutral for ∨
+      example : p ∨ False  ↔  p :=
+        -- (→)
+        have right : p ∨ False  →  p :=
+          fun h =>
+          h.elim id False.elim
+        -- (←)
+        have left : p  →  p ∨ False :=
+          Or.inl
+        -- (↔)
+        Iff.intro right left
+
+      -- EXERCISE: False kills ∧
+      example : p ∧ False  ↔  False :=
+        Iff.intro And.right False.elim
+
+      -- EXERCISE: Constructive direction of contraposition
+      example : (p → q) → (¬q → ¬p) :=
+        fun h_p2q h_nq h_p =>
+        h_nq (h_p2q h_p)
+
+      -- EXERCISE: The Challenge
+      example : ¬(p ↔ ¬p) :=
+        fun ⟨h_p_2_np, h_np_2_p⟩ =>
+        suffices h_np : ¬p from h_np (h_np_2_p h_np)
+        fun h_p =>
+        have h_np : ¬p := h_p_2_np h_p
+        h_np h_p
 end exercises_no_class
 
 
 
 /- EXERCISES: Requires classical reasoning -/
 section classy_exercises
+  variable {p q r : Prop}
   open Classical
 
   -- EXERCISE: funny
@@ -397,4 +469,54 @@ section classy_exercises
     fun h_p =>
     byContradiction
       (fun h_nq => h_n_p_and_nq ⟨h_p, h_nq⟩)
+
+  -- EXERCISE: Right coproduct preservation wtf classical logic is weird
+  example : (p → q ∨ r) → ((p → q) ∨ (p → r)) :=
+    fun h : p → q ∨ r =>
+    match (em p), (em q), (em r) with -- this is very inelegant brute force, but it's a demonstation of how we can get a "truth table" in Lean's classical logic system.
+    | Or.inl _,  Or.inl hq,  _          => Or.inl (fun _ => hq)
+    | Or.inl _,  Or.inr _,   Or.inl hr  => Or.inr (fun _ => hr)
+    | Or.inl hp, Or.inr hnq, Or.inr hnr => False.elim $ (h hp).elim hnq hnr
+    | Or.inr hnp, _,         _          => Or.inl (False.elim ∘ hnp)
+
+  -- EXERCISE: ¬∧  →  ∨¬
+  example : ¬(p ∧ q) → ¬p ∨ ¬q :=
+    fun h_n_pq =>
+    match em p with
+    | Or.inl h_p  => Or.inr $ fun h_q => h_n_pq ⟨h_p, h_q⟩
+    | Or.inr h_np => Or.inl h_np
+
+  -- EXERCISE: Witnessing non-implication
+  example : ¬(p → q) → p ∧ ¬q :=
+    fun h_n_p2q =>
+    have h_p : p :=
+      byContradiction
+        fun h_np =>
+        h_n_p2q $ False.elim ∘ h_np
+    have h_nq : ¬q := fun h_q => h_n_p2q (fun _ => h_q)
+    ⟨h_p, h_nq⟩
+
+  -- EXERCISE: Witnessing implication
+  example : (p → q) → (¬p ∨ q) :=
+    fun h_p2q =>
+    byCases (p := p)
+      (Or.inr ∘ h_p2q)
+      Or.inl
+
+  -- EXERCISE: Proof by contraposition
+  example : (¬q → ¬p) → (p → q) :=
+    fun h_nq_2_np h_p =>
+    byContradiction $
+    fun h_nq =>
+    absurd h_p (h_nq_2_np h_nq)
+
+  -- EXERCISE: Law of the Excluded Middle
+  example : p ∨ ¬p := em p
+
+  -- EXERCISE: whatever this is
+  example : ((p → q) → p) → p :=
+    fun h =>
+    match em p with
+    | Or.inl hp  => hp
+    | Or.inr hnp => h $ fun hp => absurd hp hnp
 end classy_exercises
