@@ -267,3 +267,8 @@ end classical_logic
 
 
 /- SECTION: Examples of Propositional Validities -/
+section stuff_in_lean_stdlib_already
+  #check And.comm
+  #check Or.comm
+  -- and there's more...
+end stuff_in_lean_stdlib_already
