@@ -263,3 +263,7 @@ section classical_logic
       (fun hp : ¬p =>
         Or.inl hp)
 end classical_logic
+
+
+
+/- SECTION: Examples of Propositional Validities -/
