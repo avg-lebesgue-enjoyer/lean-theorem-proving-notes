@@ -172,3 +172,94 @@ section aux_subgoals
     suffices hp : p from ⟨hq, hp⟩ -- `suffices a : α from e ; f` takes `e : α → currentGoal` and `f : α` and produces a term of type `currentGoal`.
     show p from h.left
 end aux_subgoals
+
+
+
+/- SECTION: Classical Logic -/
+section classical_logic
+  variable {p q : Prop}
+
+  #check Classical.em -- Law of the `e`xcluded `m`iddle.
+
+  theorem Classical.dne (h : ¬¬p) : p :=  -- `d`ouble `n`egation `e`limination
+    have h' : ((p → False) → False) := h
+    have h_p_v_np : p ∨ ¬p := Classical.em p
+    suffices h_np_2_p : (p → False) → p
+    from
+      Or.elim h_p_v_np
+        id
+        h_np_2_p
+    ; fun p_2_false =>
+        have bad : False := h' p_2_false
+        bad.elim
+  -- Cleaning up a bit...
+  theorem Classical.dne' (h : ¬¬p) : p :=
+    have h_p_v_np : p ∨ ¬p := Classical.em p
+    h_p_v_np.elim
+      id
+      (absurd · h)
+
+  -- EXERCISE: Prove `Classical.em` without using any of `Classical`, and assuming only `Classical.dne : ¬¬p → p`.
+  theorem Classical.em' : p ∨ ¬p :=
+    suffices h_n_n__p_v_np : ((p ∨ ¬p) → False) → False from Classical.dne h_n_n__p_v_np
+    fun h_p_v_np__2_f : ((p ∨ ¬p) → False) => -- By universal property of the coproduct, this gives rise to functions `p → False` and `¬p → False`...
+    have h_p_2_f  : p  → False          := h_p_v_np__2_f ∘ Or.inl -- this is one
+    have h_np_2_f : (p → False) → False := h_p_v_np__2_f ∘ Or.inr -- and this is the other
+    have h_nnp    : ¬¬p                 := h_np_2_f               -- the latter *is* a `¬¬p`
+    have h_p      : p                   := Classical.dne h_nnp    -- but that's enough to get a `p`
+    show False from h_p_2_f h_p                                   -- and ofc, the former produces a `False` from a `p`, which gives us the desired `False`.
+  -- "Cleaned up"...
+  theorem Classical.em'' : p ∨ ¬p :=
+    Classical.dne $
+      fun h_p_v_np__2_f =>
+      (h_p_v_np__2_f ∘ Or.inl) (Classical.dne $ h_p_v_np__2_f ∘ Or.inr)
+
+  -- Classical logic also allows a proof by cases
+  #check @Classical.byCases  -- *`: ∀ {p q : Prop} , (p → q) → (¬p → q) → q`*
+  theorem Classical.byCases' (h_p2q : p → q) (h_np2q : ¬p → q) : q :=
+    (Classical.em p).elim
+      h_p2q
+      h_np2q
+  example (h : ¬¬p) : p :=
+    Classical.byCases
+      (fun h_p  : p  => h_p)
+      (fun h_np : ¬p => absurd h_np h)
+
+  -- Classical logic furthermore enables a proof by contradiction
+  #check @Classical.byContradiction --*`: ∀ {p : Prop}, (¬p → False) → p`*
+  theorem Classical.byContradiction' (h_np_2_f : ¬p → False) : p :=
+    (Classical.em p).elim     -- We have `p ∨ ¬p`. To produce `p`, notice that...
+      id                      --  if we had `p`, then by doing nothing, we have `p`;
+      (False.elim ∘ h_np_2_f) --  else if we had `¬p`, then we can attain `False` and explode to get `p`.
+  example (h : ¬¬p) : p :=
+    Classical.byContradiction h
+
+  -- Here's one more example of needing classical logic.
+  open Classical in
+  example (h : ¬(p ∧ q)) : ¬p ∨ ¬q :=
+    -- Knowing that `¬(p ∧ q)` isn't enough to tell us any constructive information on *which* of them isn't true.
+    -- So, we dip into the non-constructivism, and branch on whether or not `p` is true (could also do `q`, obviously)
+    have h_p__2__np_v_nq  : p  → ¬p ∨ ¬q :=
+      fun h_p =>
+        byCases (p := q)
+          (fun h_q => absurd ⟨h_p, h_q⟩ h)
+          Or.inr
+    ;
+    have h_np__2__np_v_nq : ¬p → ¬p ∨ ¬q :=
+      Or.inl
+    ;
+    byCases (p := p)
+      h_p__2__np_v_nq
+      h_np__2__np_v_nq
+  -- The book proves it this way instead, which uses one less `Classical.em` than I do.
+  open Classical in
+  example (h : ¬(p ∧ q)) : ¬p ∨ ¬q :=
+    Or.elim (em p)
+      (fun hp : p =>
+        Or.inr
+          (show ¬q from
+            fun hq : q =>
+            h ⟨hp, hq⟩))
+      (fun hp : ¬p =>
+        Or.inl hp)
+end classical_logic
