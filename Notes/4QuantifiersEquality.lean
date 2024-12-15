@@ -82,3 +82,10 @@ section equality
       -- NOTE: This shit is exactly what `calc` is meant to streamline, and what the `rw` and `simp` tactics are meant to automate.
       -- (it was cool to do it once though)
 end equality
+
+
+
+/- SECTION: `calc` -/
+section the_calc_feature
+  -- Shitpost
+end the_calc_feature
