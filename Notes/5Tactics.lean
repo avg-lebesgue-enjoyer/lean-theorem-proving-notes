@@ -356,4 +356,18 @@ section structuring
     -- Outstanding goal: *`a : Nat ⊢ a + 2 = 8`*
     -- The proof is now impossible T-T
   -/
+
+  -- NOTE: You can use `·` or `{ ... }` to focus on sub-goals.
+  example (p q : Prop) : p ∨ q → (p ∧ p) ∨ (q ∧ q) := by
+    intro h; cases h; {
+      apply Or.inl
+      constructor <;> assumption
+    } ; { -- whack-ass spacing
+    apply Or.inr ;
+    constructor <;> assumption
+    }
 end structuring
+
+
+
+/- SECTION: Combinators-/
