@@ -110,4 +110,11 @@ section basic_tactics
   example (α : Type) (p q : α → Prop) : (∃ x, p x ∧ q x) → ∃ x, q x ∧ p x := by
     intro ⟨x, ⟨h_px, h_qx⟩⟩
     exact ⟨x, ⟨h_qx, h_px⟩⟩
+  -- You can also *actually pattern-match
+  example (α : Type) (p q : α → Prop) : (∃ x, p x ∨ q x) → ∃ x, q x ∨ p x := by
+    intro
+    | ⟨x, Or.inl h_px⟩ =>
+      exact ⟨x, Or.inr h_px⟩
+    | ⟨x, Or.inr h_qx⟩ =>
+      exact ⟨x, Or.inl h_qx⟩
 end basic_tactics
