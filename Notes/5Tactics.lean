@@ -297,4 +297,21 @@ section structuring
         intro h; cases h with
         | inl hl => exact ⟨hl.left, .inl hl.right⟩
         | inr hr => exact ⟨hr.left, .inr hr.right⟩
+
+  -- NOTE: `show t` declares that we're trying to exhibit a term of the type `t`.
+  --       You can use this to rewrite the current goal as something definitionally
+  --        equivalent, or you can just use it to make the proof easier to read.
+  example (p q r : Prop) : p ∧ (q ∨ r) ↔ (p ∧ q) ∨ (p ∧ r) := by
+    constructor
+    case mp =>
+      intro ⟨h_p, h_qvr⟩
+      cases h_qvr
+      · apply Or.inl
+        show p ∧ q
+        constructor <;> assumption
+      · apply Or.inr
+        show p ∧ r
+        constructor <;> assumption
+    case mpr =>
+      admit
 end structuring
