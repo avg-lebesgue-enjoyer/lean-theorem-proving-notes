@@ -136,4 +136,168 @@ section the_calc_feature
     have : a = e     := this.trans hed.symm
     ; this
   #print gamer''
+
+  -- The `rw = rewrite` tactic is especially useful when working with `calc` blocks.
+  -- It does what you think it does, which isn't really explained until later.
+  -- Essentially, it abstracts away all those `.symm`, `congrArg` and other
+  --  "precise boilerplate" functions that need to be thrown in, and it's a bit
+  --  more powerful than that.
+  theorem gamer'''
+    (a b c d e : Nat)
+    (hab : a = b)
+    (hbc : b = c + 1)
+    (hcd : c = d)
+    (hed : e = 1 + d)
+    : a = e :=
+    calc a
+      _ = b     := by rw [hab]
+      _ = c + 1 := by rw [hbc]
+      _ = d + 1 := by rw [hcd] -- the `congrArg` and its precise parameters are autofilled here
+      _ = 1 + d := by rw [Nat.add_comm] -- the precise parameters to `Nat.add_comm` are autofilled here
+      _ = e     := by rw [hed] -- the `.symm` is autofilled here
+    #print gamer'''
+  -- You can add multiple things to the parameter list of `rw` to apply all of them.
+  theorem gamer''''
+    (a b c d e : Nat)
+    (hab : a = b)
+    (hbc : b = c + 1)
+    (hcd : c = d)
+    (hed : e = 1 + d)
+    : a = e :=
+    calc a
+      _ = d + 1 := by rw [hab, hbc, hcd]
+      _ = 1 + d := by rw [Nat.add_comm]
+      _ = e     := by rw [hed]
+  #print gamer''''
+  -- It's powerful enough that throwing all these rules into the rewriter is enough
+  --  to complete this contrived theorem's proof
+  theorem gamer'''''
+    (a b c d e : Nat)
+    (hab : a = b)
+    (hbc : b = c + 1)
+    (hcd : c = d)
+    (hed : e = 1 + d)
+    : a = e := by
+      rw [hab, hbc, hcd, Nat.add_comm, hed]
+  #print gamer'''''
+  -- While the `rw` tactic applies the given hypotheses sequentially, the `simp`
+  --  tactic applies them in any order, and perhaps repeatedly. Because of careful
+  --  rules that ensure termination of `simp` calls, it might leave you with something
+  --  a little weird though.
+  theorem gamer''''''
+    (a b c d e : Nat)
+    (hab : a = b)
+    (hbc : b = c + 1)
+    (hcd : c = d)
+    (hed : e = 1 + d)
+    : a = e := by
+      simp [hab, hbc, hcd, hed, Nat.add_comm]
+  #print gamer''''''
+
+  -- `calc` can be used with any suitably compatible transitive relations. e.g.
+  theorem funny
+    (a b c d : Nat)
+    (hab : a = b)
+    (hbc : b ≤ c)
+    (hcd : c + 1 < d)
+    : a < d :=
+    calc a
+      _ = b     := hab
+      _ ≤ c     := hbc
+      _ ≤ c + 1 := Nat.le_succ c
+      _ < d     := hcd
+  #print funny
+  #check trans -- Key point of the type signature: *heterogeneous* transitivity!
+
+  -- `calc` is really a wrapper for putting in necessary `Trans.trans` calls.
+  -- You can therefore extend its reach by implementing `instance : Trans ⋯` :)
+  section divides_trans
+    def divides (x y : Nat) : Prop :=
+      ∃ d : Nat, y = d * x
+    infix:50 " /|/ " => divides -- `|` is already really overloaded okay...
+
+    def divides_trans
+      {x y z : Nat}
+      (h_xy : x /|/ y) (h_yz : y /|/ z)
+      : x /|/ z :=
+        let ⟨d_xy, pf_d_xy⟩ : ∃ (d_xy : Nat), (y = d_xy * x) := h_xy
+        let ⟨d_yz, pf_d_yz⟩ : ∃ d_yz : Nat, z = d_yz * y := h_yz
+        let d_xz : Nat := d_yz * d_xy
+        have pf_d_xz : z = (d_yz * d_xy) * x :=
+          calc z
+            _ = d_yz * y          := pf_d_yz
+            _ = d_yz * (d_xy * x) := congrArg (d_yz * ·) pf_d_xy
+            _ = (d_yz * d_xy) * x := (Nat.mul_assoc d_yz d_xy x).symm
+        show ∃ d_xz : Nat, z = d_xz * x from ⟨d_xz, pf_d_xz⟩
+
+    def divides_mul
+      (x d : Nat)
+      : x /|/ (d * x) :=
+      show ∃ d' : Nat, d * x = d' * x from ⟨d, rfl⟩
+
+    instance : Trans divides divides divides where
+      trans := divides_trans
+
+    example
+      {x y z : Nat}
+      (h_x_d_y : x /|/ y)
+      (h_y_e_z : y  =  z)
+      : x /|/ (2 * z) :=
+        calc x
+          _ /|/ y       := h_x_d_y
+          _  =  z       := h_y_e_z
+          _ /|/ (2 * z) := divides_mul .. -- short for `divides_mul _ _` -- Lean can synthesise these to `divides_mul z 2`
+  end divides_trans
+
+  -- Final example
+  example
+    {x y : Nat}
+    : (x + y) * (x + y)
+      = x * x  +  y * x  +  x * y  +  y * y
+    := calc (x + y) * (x + y)
+      _ = (x + y) * x  +  (x + y) * y
+          := Nat.mul_add ..
+      _ = x * x  +  y * x  +  (x + y) * y
+          := congrArg (· + (x + y) * y) $ Nat.add_mul ..
+      _ = x * x  +  y * x  +  (x * y  +  y * y)
+          := congrArg (x * x  +  y * x  +  ·) $ Nat.add_mul ..
+      _ = (x * x  +  y * x)  +  x * y  +  y * y
+          := Eq.symm $ Nat.add_assoc (x * x + y * x) (x * y) (y * y)
+          -- this last line was a huge pain in the ass to figure out
+  -- Simplified using `rw`
+  example
+    {x y : Nat}
+    : (x + y) * (x + y)
+      = x * x  +  y * x  +  x * y  +  y * y
+    := calc (x + y) * (x + y)
+      _ = (x + y) * x  +  (x + y) * y
+          := by rw [Nat.mul_add]
+      _ = x * x  +  y * x  +  (x + y) * y
+          := by rw [Nat.add_mul]
+      _ = x * x  +  y * x  +  (x * y  +  y * y)
+          := by rw [Nat.add_mul]
+      _ = (x * x  +  y * x)  +  x * y  +  y * y
+          := by rw [←Nat.add_assoc]
+          -- The `←` throws in the `Eq.symm $` for us
+  -- Simplified more using `rw`
+  example
+    {x y : Nat}
+    : (x + y) * (x + y)
+      = x * x  +  y * x  +  x * y  +  y * y
+    := by
+      rw [Nat.mul_add, Nat.add_mul, Nat.add_mul, ←Nat.add_assoc]
+  -- Simplified further by `simp`
+  example
+    {x y : Nat}
+    : (x + y) * (x + y)
+      = x * x  +  y * x  +  x * y  +  y * y
+    := by
+      simp [Nat.mul_add, Nat.add_mul, ←Nat.add_assoc]
+  -- And finalised by `simp`
+  example
+    {x y : Nat}
+    : (x + y) * (x + y)
+      = x * x  +  y * x  +  x * y  +  y * y
+    := by
+      simp [Nat.mul_add, Nat.add_mul, Nat.add_assoc]  -- `simp` doesn't need the `←`
 end the_calc_feature
