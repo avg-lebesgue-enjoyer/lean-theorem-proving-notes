@@ -232,4 +232,35 @@ section moar
     exists x -- says that we wish to introduce a witness to the goal `∃ x, q x ∧ p x` under the name `x`
     have ⟨h_px, h_qx⟩ := h
     constructor <;> assumption
+  -- Again, Lean is somewhat good with verifying existential witnesses when stuff is properly spelled out to it
+  example (p q : Nat → Prop) : (∃ x, p x ∧ q x) → ∃ x, q x ∧ p x := by
+    intro ⟨x, ⟨h_px, h_qx⟩⟩
+    exists x -- the proof that `x` works is by `constructor` and `assumption`, so Lean can fill this in.
+  -- You can use these tactics to define functions on data, not just propositions. It's fucking weird though...
+  def swap_pair {α β : Type} : α × β → β × α := by
+    intro p; cases p; constructor <;> assumption
+  def swap_sum  {α β : Type} : α ⊕ β → β ⊕ α := by
+    intro p; cases p <;> try (constructor ; assumption)
+    apply Sum.inr ; assumption
+
+  -- Here's `Nat`-induction.
+  example (p : Nat → Prop) (h₀ : p 0) (h_ind : ∀ n : Nat, p (n.succ)) : ∀ n, p n := by
+    intro n; cases n <;> first | assumption | apply h_ind -- `try assumption` gets rid of the trivial `p 0` proof; `try apply h_ind` gets rid off the `p (n† + 1)` proof, with the argument `h_ind n†` autofilled by Lean
+
+  -- NOTE: The `contradiction` tactic finds hypotheses that lead to a contradiction, thereafter exploding to prove whatever
+  example (p q : Prop) : p ∧ ¬ p → q := by
+    intro h; cases h; contradiction -- contradiction from applying `¬ p  :=  p → False` to the `p`
+
+  -- NOTE: `match` is like `cases`, but instead of introducing goals, it expects solutions to them outright. I'm not gonna belabour this.
+  -- You can anonymous-pattern-match on an `intro`:
+  example (p q r : Prop) : p ∧ (q ∨ r) ↔ (p ∧ q) ∨ (p ∧ r) := by
+    constructor
+    case mp =>
+      intro
+      | ⟨hp, Or.inl hq⟩ => apply Or.inl; apply And.intro (by assumption) (by assumption)
+      | ⟨_ , Or.inr _ ⟩ => apply Or.inr $ And.intro ‹p› ‹r›
+    case mpr =>
+      intro
+      | Or.inl ⟨_, _⟩ => constructor; apply ‹p› ; apply Or.inl; apply ‹q›
+      | Or.inr ⟨_, _⟩ => constructor; assumption; apply Or.inr; assumption
 end moar
