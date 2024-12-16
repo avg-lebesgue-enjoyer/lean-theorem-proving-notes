@@ -313,5 +313,14 @@ section structuring
         show p ∧ r
         constructor <;> assumption
     case mpr =>
-      admit
+      intro h
+      cases h
+      case inl h_pxq =>
+        constructor
+        · exact h_pxq.left
+        · exact Or.inl h_pxq.right
+      case inr h_pxr =>
+        constructor
+        · exact h_pxr.left
+        · exact Or.inr h_pxr.right
 end structuring
