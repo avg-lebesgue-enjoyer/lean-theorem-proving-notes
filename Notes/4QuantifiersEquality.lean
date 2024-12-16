@@ -87,5 +87,53 @@ end equality
 
 /- SECTION: `calc` -/
 section the_calc_feature
-  -- Shitpost
+  -- `calc` is really nice syntax for relations brought together transitively.
+  theorem gamer
+    (a b c d e : Nat)
+    (hab : a = b)
+    (hbc : b = c + 1)
+    (hcd : c = d)
+    (hed : e = 1 + d)
+    : a = e :=
+    calc a
+      _ = b     := hab
+      _ = c + 1 := hbc
+      _ = d + 1 := congrArg (· + 1) hcd
+      _ = 1 + d := Nat.add_comm d 1
+      _ = e     := hed.symm
+  #print gamer  -- shitload of `trans`es wrapping what you'd otherwise expect.
+  -- c.f. the following, which is pretty much the same
+  theorem gamer'
+    (a b c d e : Nat)
+    (hab : a = b)
+    (hbc : b = c + 1)
+    (hcd : c = d)
+    (hed : e = 1 + d)
+    : a = e :=
+    have h_ab   : a = b     := hab
+    have h_ac1  : a = c + 1 := h_ab.trans hbc
+    have h_ad1  : a = d + 1 := h_ac1.trans $ congrArg (· + 1) hcd
+    have h_a1d  : a = 1 + d := h_ad1.trans $ Nat.add_comm d 1
+    have h_ae   : a = e     := h_a1d.trans hed.symm
+    ; h_ae
+  #print gamer'
+  -- btw, *anonymous `have` expressions* make this easier.
+  -- In the following, `this` always refers to the last term produced
+  --  by an anonymous have expression. Because of variable scoping under
+  --  colliding names, this is really the same as replacing each `have : ⋯`
+  --  with `have this : ⋯`.
+  theorem gamer''
+    (a b c d e : Nat)
+    (hab : a = b)
+    (hbc : b = c + 1)
+    (hcd : c = d)
+    (hed : e = 1 + d)
+    : a = e :=
+    have : a = b     := hab
+    have : a = c + 1 := this.trans hbc
+    have : a = d + 1 := this.trans $ congrArg (· + 1) hcd
+    have : a = 1 + d := this.trans $ Nat.add_comm d 1
+    have : a = e     := this.trans hed.symm
+    ; this
+  #print gamer''
 end the_calc_feature
