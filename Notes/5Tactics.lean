@@ -92,6 +92,18 @@ section basic_tactics
         · exact Or.inl ∘ And.right
         · exact Or.inr ∘ And.right
   #print gaming
-
-  --
+  -- `intro` can introduce terms in general, not just proofs of propositions
+  example (α : Type) : α → α := by
+    intro (a : α)
+    exact a
+  example (α : Type) : ∀ x : α, x = x := by
+    intro x
+    exact rfl
+  -- ofc, you can introduce several thngs at once
+  example : ∀ a b c : Nat, a = b → a = c → c = b := by
+    intro a b c h_ab h_ac
+    apply Eq.trans
+    · apply Eq.symm
+      exact h_ac
+    · assumption
 end basic_tactics
