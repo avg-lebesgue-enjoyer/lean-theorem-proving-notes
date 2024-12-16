@@ -464,7 +464,7 @@ end hospitality
 
 
 
-/- EXERCISES: Classical existence laws -/
+/- EXERCISES: (5) Classical existence laws -/
 section exercises_classical_existence
   open Classical
 
@@ -634,3 +634,103 @@ section exercises_classical_existence
     -- (↔)
     ⟨right, left⟩
 end exercises_classical_existence
+
+
+
+/- EXERCISES: (1) Rules involving ∀ -/
+section exercises_1
+  variable (α : Type) (p q : α → Prop)
+
+  -- EXERCISE: ∀∧ ↔ ∧∀
+  example : (∀ x, p x ∧ q x) ↔ (∀ x, p x) ∧ (∀ x, q x) :=
+    -- (→)
+    have forwards (h_all : ∀ x, p x ∧ q x) : (∀ x, p x) ∧ (∀ x, q x) :=
+      ⟨fun x => (h_all x).left, fun x => (h_all x).right⟩
+    -- (←)
+    have converse : (∀ x, p x) ∧ (∀ x, q x) → ∀ x, p x ∧ q x :=
+      fun ⟨h_p, h_q⟩ x => ⟨h_p x, h_q x⟩
+    -- (↔)
+    ⟨forwards, converse⟩
+
+  -- EXERCISE: ∀→ → →∀; i.e. *`∀` is a functor*
+  example (h_all_p_2_q : ∀ x, p x → q x) (h_all_p : ∀ x, p x) : ∀ x, q x :=
+    fun x => h_all_p_2_q x (h_all_p x)
+
+  -- EXERCISE: ∨∀ → ∀∨
+  example (h_all_p__v__all_q : (∀ x, p x) ∨ (∀ x, q x)) : ∀ x, p x ∨ q x :=
+    fun x =>
+    h_all_p__v__all_q.elim
+      (fun h_all_p => Or.inl (h_all_p x))
+      (fun h_all_q => Or.inr (h_all_q x))
+end exercises_1
+
+
+
+/- EXERCISES: (2) -/
+section ex_2
+  variable (α : Type) (p q : α → Prop)
+  variable (r : Prop)
+
+  example : α → ((∀ _ : α, r) ↔ r) :=
+    fun a =>
+    -- (→)
+    have forwards : (∀ _ : α, r) → r := fun h => h a
+    -- (←)
+    have shoes : r → ∀ _ : α, r := fun h_r _ => h_r
+    -- (↔)
+    ⟨forwards, shoes⟩
+
+  open Classical in
+  example : (∀ x, p x ∨ r) ↔ (∀ x, p x) ∨ r :=
+    -- (→)
+    have socks (h_all_p_v_r : ∀ x, p x ∨ r) : (∀ x, p x) ∨ r :=
+      byCases (p := r)
+        Or.inr
+        (fun h_nr => Or.inl $ fun x => (h_all_p_v_r x).elim id (absurd · h_nr))
+    -- (←)
+    have shoes (h : (∀ x, p x) ∨ r) : (∀ x, p x ∨ r) :=
+      h.elim
+        (fun h_all_p x => Or.inl $ h_all_p x)
+        (fun h_r _ => Or.inr h_r)
+    -- (↔)
+    ⟨socks, shoes⟩
+
+  example : (∀ x, r → p x) ↔ (r → ∀ x, p x) :=
+    -- (→)
+    have socks (h_all_r_2_p : ∀ x, r → p x) (h_r : r) : ∀ x, p x :=
+      (h_all_r_2_p · h_r)
+    -- (←)
+    have shoes (h_r_2_all_p : r → ∀ x, p x) : ∀ x, r → p x :=
+      fun x h_r =>
+      h_r_2_all_p h_r x
+    -- (↔)
+    ⟨socks, shoes⟩
+end ex_2
+
+
+
+/- EXERCISES: (3) Barber -/
+section ex_barber
+  variable (men : Type) (barber : men)
+  variable (shaves : men → men → Prop)
+
+  -- NOTE: used classical logic
+  example (h : ∀ x : men, shaves barber x ↔ ¬ shaves x x) : False :=
+    have shitpost : shaves barber barber ↔ ¬ shaves barber barber := h barber
+    (Classical.em $ shaves barber barber).elim
+      (fun h_is_so => shitpost.mp h_is_so h_is_so)
+      (fun h_isnt  => h_isnt $ shitpost.mpr h_isnt)
+end ex_barber
+
+
+
+/- EXERCISES: (4) Things -/
+section ex_things
+  def even (n : Nat) : Prop := ∃ d : Nat, n = 2 * d
+
+  def prime (n : Nat) : Prop := ∀ d : Nat, (∃ x : Nat, n = d * x) → d = 1 ∨ d = n
+
+  def infinitely_many_primes : Prop := ∀ x : Nat, ∃ p : Nat, p ≥ x ∧ prime p
+
+  -- couldn't be fucked to do the rest
+end ex_things
