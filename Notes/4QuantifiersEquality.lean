@@ -398,12 +398,194 @@ section existential_crisis
           simp [pf_α, pf_β]
           simp [←Nat.mul_add]
     -- Golf...
-    theorem even_plus_even_is_even'''
-      {a b : Nat}
-      (h_a : a.is_even) (h_b : b.is_even)
-      : (a + b).is_even :=
-        let ⟨(α : Nat), (pf_α : a = 2 * α)⟩ := h_a
-        let ⟨(β : Nat), (pf_β : b = 2 * β)⟩ := h_b
-        ⟨α + β, by simp [pf_α, pf_β, Nat.mul_add]⟩
+    theorem even_plus_even_is_even''' {a b : Nat} (h_a : a.is_even) (h_b : b.is_even) : (a + b).is_even := let ⟨α, pf_α⟩ := h_a ; let ⟨β, pf_β⟩ := h_b; ⟨α + β, by simp [pf_α, pf_β, Nat.mul_add]⟩
   end even_example
+
+  -- Just like we don't have the `¬∧ → ∨¬` direction of DeMorgan's in constructive logic, we need classical help for the `¬∀¬ ↔ ∃` proof
+  open Classical in
+  example
+    {α : Type}
+    {p : α → Prop}
+    (h : ¬ ∀ (x : α), ¬ p x)
+    : ∃ (x : α), p x :=
+      byContradiction $
+      fun h' : (∃ x : α, p x) → False =>
+      h $
+      fun x : α =>
+      fun h'' : p x =>
+      h' $
+      ⟨x, h''⟩
 end existential_crisis
+
+
+
+/- EXERCISES: Classical existence laws -/
+section exercises_classical_existence
+  open Classical
+
+  variable (α : Type) (p q : α → Prop)
+  variable (r : Prop)
+
+  -- EXERCISE: Obvious
+  example : (∃ _ : α, r) → r := fun ⟨_, pf⟩ => pf
+  example (a : α) : r → (∃ _ : α, r) := fun h_r => ⟨a, h_r⟩
+  example
+    : (∃ x, p x ∧ r) ↔ (∃ x, p x) ∧ r :=
+      -- (→)
+      have right : (∃ x : α, p x ∧ r) → (∃ x : α, p x) ∧ r :=
+        fun ⟨x, ⟨pf_px, pf_r⟩⟩ =>
+        ⟨⟨x, pf_px⟩, pf_r⟩
+      ;
+      -- (←)
+      have left  : (∃ x : α, p x) ∧ r → (∃ x : α, p x ∧ r) :=
+        fun ⟨⟨x, pf_px⟩, pf_r⟩ =>
+        ⟨x, ⟨pf_px, pf_r⟩⟩
+      ;
+      -- (↔)
+      Iff.intro right left
+  example
+    : (∃ x, p x ∨ q x) ↔ (∃ x, p x) ∨ (∃ x, q x) :=
+      -- (→)
+      have right : (∃ x, p x ∨ q x) → (∃ x, p x) ∨ (∃ x, q x) :=
+        fun ⟨x, pf_or⟩ =>
+        pf_or.elim
+          (fun pf_px => Or.inl ⟨x, pf_px⟩)
+          (fun pf_qx => Or.inr ⟨x, pf_qx⟩)
+      ;
+      -- (←)
+      have left : (∃ x, p x) ∨ (∃ x, q x) → (∃ x, p x ∨ q x) :=
+        fun h_or =>
+        h_or.elim
+          (fun ⟨x, h_px⟩ => ⟨x, Or.inl h_px⟩)
+          (fun ⟨x, h_qx⟩ => ⟨x, Or.inr h_qx⟩)
+      ;
+      -- (↔)
+      ⟨right, left⟩
+
+  example : (∀ x, p x) ↔ ¬ (∃ x, ¬ p x) :=
+    -- (→)
+    have right : (∀ x, p x) → (∃ x, p x → False) → False :=
+      fun h_all_p ⟨x, h_not_px⟩ =>
+      h_not_px (h_all_p x)
+    ;
+    -- (←)
+    have left : ¬ (∃ x, p x → False) → (∀ x, p x) :=
+      fun h_not_exists_not_p (x : α) =>
+      byContradiction $ -- NOTE: Nonconstructive
+      fun h_not_px =>
+      h_not_exists_not_p ⟨x, h_not_px⟩
+    ;
+    -- (↔)
+    ⟨right, left⟩
+
+  set_option linter.unusedVariables false
+  example : (∃ x, p x) ↔ ¬ (∀ x, ¬ p x) :=
+    -- (→)
+    have R : (∃ x, p x) → (∀ x, ¬ p x) → False :=
+      fun (⟨x, h_px⟩ : ∃ y : α, p y) (h_all_not_p : ∀ y, ¬ p y) =>
+      h_all_not_p x h_px
+    ;
+    -- (←)
+    have L : ¬ (∀ x, ¬ p x) → (∃ x, p x) :=
+      fun h_not_all_not_p =>
+      byContradiction $ -- NOTE: Nonconstructive!
+      fun h_not_exists_p =>
+      h_not_all_not_p $
+      fun x h_px =>
+      h_not_exists_p ⟨x, h_px⟩
+    ;
+    -- (↔)
+    ⟨R, L⟩
+  set_option linter.unusedVariables true
+
+  -- EXERCISE: `¬∃ ↔ ∀¬`; constructive
+  example : (¬ ∃ x, p x) ↔ (∀ x, ¬ p x) :=
+    -- (→)
+    have right (h_n_ex : ¬ ∃ x, p x) : (∀ x, ¬ p x) :=
+      fun x h_px =>
+      h_n_ex ⟨x, h_px⟩
+    -- (←)
+    have left (h_all_n : ∀ x, ¬ p x) (h_ex : ∃ x, p x) : False :=
+      let ⟨x, h_px⟩ := h_ex
+      h_all_n x h_px
+    -- (↔)
+    ⟨right, left⟩
+
+  -- EXERCISE: `¬∀ ↔ ∃¬`; nonconstructive
+  example : (¬ ∀ x, p x) ↔ (∃ x, ¬ p x) :=
+    -- (→) NOTE: nonconstructive
+    have right (h_n_all : ¬ ∀ x, p x) : (∃ x, ¬ p x) :=
+      byContradiction $
+      fun h_n_ex_n =>
+      h_n_all $
+      fun x =>
+      byContradiction $
+      fun h_n_px =>
+      h_n_ex_n $
+      ⟨x, h_n_px⟩
+    -- (←)
+    have left (h_ex_n : ∃ x, ¬ p x) (h_all : ∀ x, p x) : False :=
+      let ⟨x, h_n_px⟩ := h_ex_n
+      h_n_px (h_all x)
+    -- (↔)
+    ⟨right, left⟩
+
+  -- EXERCISE: Universal property of the coproduct
+  example : (∀ x, p x → r) ↔ (∃ x, p x) → r :=
+    -- (→)
+    have right (h_all : ∀ x, p x → r) (h_exi : ∃ x, p x) : r :=
+      let ⟨x, h_px⟩ := h_exi
+      h_all x h_px
+    -- (←)
+    have left (h_exi_2_r : (∃ x, p x) → r) : (∀ x, p x → r) :=
+      fun x h_px => h_exi_2_r ⟨x, h_px⟩
+    -- (↔)
+    ⟨right, left⟩
+
+  -- EXERCISE: Weird shit
+  example (a : α) : (∃ x, p x → r) ↔ (∀ x, p x) → r :=
+    -- (→)
+    have right (h_ex : ∃ x, p x → r) (h_all : ∀ x, p x) : r :=
+      let ⟨x, h_px_2_r⟩ := h_ex
+      h_px_2_r (h_all x)
+    -- (←)
+    have left (h_all_p__2_r : (∀ x, p x) → r) : ∃ x, p x → r :=
+      have pf_case_r (h_r : r) : ∃ x, p x → r :=
+        ⟨a, fun _ => h_r⟩
+      have pf_case_nr (h_nr : ¬r) : ∃ x, p x → r :=
+        byContradiction $
+        fun h_n_exi_p_2_r =>
+        h_nr ∘ h_all_p__2_r $
+        fun x =>
+        byContradiction $
+        fun h_n_px =>
+        h_n_exi_p_2_r $
+        ⟨x, fun h_px => absurd h_px h_n_px⟩
+      byCases (p := r)
+        pf_case_r
+        pf_case_nr
+    -- (↔)
+    ⟨right, left⟩
+
+  -- EXERCISE: Weird shit
+  example (a : α) : (∃ x, r → p x) ↔ (r → ∃ x, p x) :=
+    -- (→)
+    have right (h_exi : ∃ x, r → p x) (h_r : r) : ∃ x, p x :=
+      let ⟨x, h_r_2_px⟩ := h_exi
+      ⟨x, h_r_2_px h_r⟩
+    -- (←)
+    have left (h_r_2_exi_p : r → ∃ x, p x) : ∃ x, r → p x :=
+      -- (Case: r)
+      have pf_case_r (h_r : r) : ∃ x, r → p x :=
+        let ⟨x, h_px⟩ := h_r_2_exi_p h_r
+        ⟨x, fun _ => h_px⟩
+      -- (Case: ¬ r)
+      have pf_case_nr (h_nr : r → False) : ∃ x, r → p x :=
+        ⟨a, fun h_r => absurd h_r h_nr⟩
+      -- Stitched together
+      byCases (p := r)
+        pf_case_r
+        pf_case_nr
+    -- (↔)
+    ⟨right, left⟩
+end exercises_classical_existence
