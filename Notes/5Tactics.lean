@@ -343,4 +343,17 @@ section structuring
     | inr h_r =>
       have := And.intro h_p h_r
       apply Or.inr ; assumption -- no names!
+
+  -- NOTE: `let` tactic does what you think it does, but the definition can be unfolded in the proof
+  example : ∃ x, x + 2 = 8 := by
+    let a : Nat := 3 * 2
+    exists a
+  -- If we use `have` instead of `let` in the previous example, Lean can't use the definition of `a` to auto-prove that `a + 2 = 8`
+  /-
+  example : ∃ x, x + 2 = 8 := by
+    have a : Nat := 3 * 2
+    exists a
+    -- Outstanding goal: *`a : Nat ⊢ a + 2 = 8`*
+    -- The proof is now impossible T-T
+  -/
 end structuring
