@@ -301,3 +301,10 @@ section the_calc_feature
     := by
       simp [Nat.mul_add, Nat.add_mul, Nat.add_assoc]  -- `simp` doesn't need the `←`
 end the_calc_feature
+
+
+
+/- SECTION: ∃ -/
+section existential_crisis
+  -- Sugoma
+end existential_crisis
