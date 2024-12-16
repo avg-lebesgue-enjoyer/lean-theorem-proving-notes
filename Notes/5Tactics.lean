@@ -264,3 +264,10 @@ section moar
       | Or.inl ⟨_, _⟩ => constructor; apply ‹p› ; apply Or.inl; apply ‹q›
       | Or.inr ⟨_, _⟩ => constructor; assumption; apply Or.inr; assumption
 end moar
+
+
+
+/- SECTION: Structuring Tactic Proofs -/
+section structuring
+  -- amon gus
+end structuring
