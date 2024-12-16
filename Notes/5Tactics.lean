@@ -106,4 +106,8 @@ section basic_tactics
     · apply Eq.symm
       exact h_ac
     · assumption -- looks up the assumption `h_ab : a = b` already in the tactic state
+  -- You can implicitly pattern match too
+  example (α : Type) (p q : α → Prop) : (∃ x, p x ∧ q x) → ∃ x, q x ∧ p x := by
+    intro ⟨x, ⟨h_px, h_qx⟩⟩
+    exact ⟨x, ⟨h_qx, h_px⟩⟩
 end basic_tactics
