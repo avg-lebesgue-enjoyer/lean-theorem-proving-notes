@@ -172,3 +172,6 @@ end basic_tactics
 
 
 /- SECTION: More tactics -/
+section moar
+  -- moar
+end moar
