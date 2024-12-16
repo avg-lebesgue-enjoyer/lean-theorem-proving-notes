@@ -198,6 +198,7 @@ section moar
     cases h <;> assumption
 
   -- NOTE: The `constructor` tactic `apply`s the unique constructure of a `structure`.
+  --       More generally, it `apply`s the first applicable constructive of an `inductive` type.
   example
     (p q r : Prop)
     : p ∧ (q ∨ r) ↔ (p ∧ q) ∨ (p ∧ r)
@@ -217,4 +218,19 @@ section moar
         <;> constructor -- 4 goals, two of the form `h† : p ∧ _ ⊢ p`
         <;> try apply And.left ‹p ∧ _› -- solves these ^^
         repeat first | (apply Or.inl ∘ And.right $ ‹p ∧ _›) | (apply Or.inr ∘ And.right $ ‹p ∧ _›)
+  -- For instance, `constructor` can be used to decompose an `∃ ⋯, ⋯` term
+  example (p q : Nat → Prop) : (∃ x, p x) → ∃ x, p x ∨ q x := by
+    intro h; cases h with
+    | intro =>
+    constructor
+    case intro.w => assumption
+    apply Or.inl
+    assumption
+  -- But the `exists` tactic is better suited for explicitly providing a witness to an existential quantifier.
+  example (p q : Nat → Prop) : (∃ x, p x ∧ q x) → ∃ x, q x ∧ p x := by
+    intro ⟨x, h⟩ -- if you decompose `h` right here, Lean is actually able to auto-complete the goal remaining after the next line!
+    exists x -- says that we wish to introduce a witness to the goal `∃ x, q x ∧ p x` under the name `x`
+    have h_px : p x := h.left
+    have h_qx : q x := h.right
+    constructor <;> assumption
 end moar
