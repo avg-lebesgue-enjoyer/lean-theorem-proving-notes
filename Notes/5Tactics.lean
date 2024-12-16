@@ -323,4 +323,24 @@ section structuring
         constructor
         · exact h_pxr.left
         · exact Or.inr h_pxr.right
+  -- Here's a definitionally equivalent rewrite:
+  example (n : Nat) : n + 1 = Nat.succ n := by
+    show Nat.succ n = Nat.succ n
+    rfl
+
+  -- NOTE: `have` does what you think it does.
+  example (p : Prop) : p ∧ q → p ∧ p := by
+    intro h_pxq
+    have : p := h_pxq.left -- you can even anonymise! The default label is `this` :)
+    constructor <;> assumption
+  -- You don't even need typing
+  example (p q r : Prop) : p ∧ (q ∨ r) → (p ∧ q) ∨ (p ∧ r) := by
+    intro ⟨h_p, h_qvr⟩
+    cases h_qvr with
+    | inl h_q =>
+      have := And.intro h_p h_q
+      apply Or.inl ; exact this
+    | inr h_r =>
+      have := And.intro h_p h_r
+      apply Or.inr ; assumption -- no names!
 end structuring
