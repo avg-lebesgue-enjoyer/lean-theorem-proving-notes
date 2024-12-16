@@ -419,7 +419,28 @@ end combinators
 
 
 
-/- SECTION: `rewrite` (aka `rw`) and `simp` -/
+/- SECTION: `rewrite` (aka `rw`) -/
 section rewriting
-  -- shitpost
+  -- NOTE: `rw`
+  example (f : Nat → Nat) (k : Nat) (h₀ : f 0 = 0) (h_k : k = 0) : f k = 0 := by
+    rw [h_k]
+    rw [h₀]
+  example (f : Nat → Nat) (k : Nat) (h_0 : f 0 = 0) (h_k : k = 0) : f k = 0 := by
+    rw [h_k, h_0] -- syntactic sugar for the above
+  -- `rw ⋯ at ⋯` is a rewrite of a particular hypothesis in the known list of hypotheses.
+  example (f : Nat → Nat) (a : Nat) (h : a + 0 = 0) : f a = f 0 := by
+    -- *`h : a + 0 = 0`*
+    rw [Nat.add_zero] at h
+    -- *`h : a = 0`*
+    rw [h]
+
+  -- `rw` isn't limited to propositions
+  def Tuple (α : Type) (n : Nat) := { as : List α // as.length = n }
+  example (n : Nat) (h : n = 0) (t : Tuple α n) : Tuple α 0 := by
+    rw [h] at t
+    exact t
 end rewriting
+
+
+
+/- SECTION: `simp` -/
