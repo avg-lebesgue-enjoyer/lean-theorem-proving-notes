@@ -117,4 +117,50 @@ section basic_tactics
       exact ⟨x, Or.inr h_px⟩
     | ⟨x, Or.inr h_qx⟩ =>
       exact ⟨x, Or.inl h_qx⟩
+
+  -- NOTE: `intros` is a version of `intro` that introduces as much stuff as possible and gives automatically chosen names for all of them
+  example : ∀ a b c : Nat, a = b → a = c → c = b := by
+    intros
+    apply Eq.trans
+    · apply Eq.symm
+      assumption
+    · assumption
+
+  -- NOTE: the `rfl` tactic is short for `exact rfl`, itself short for `exact Eq.refl _`
+  example (y : Nat) : (fun _ : Nat => 0) y = 0 :=
+    by rfl
+
+  -- NOTE: The `repeat t` tactic, where `t` is a tactic, applies a tactic as many times as it may be applied, until we stop making progress
+  example : ∀ a b c : Nat, a = b → a = c → c = b := by
+    intros
+    apply Eq.trans
+    apply Eq.symm
+    repeat assumption
+
+  -- NOTE: `revert x`, where `x` is a variable name already in the tactic state, will generalise away from the specific name `x`
+  example (x : Nat) : x = x := by
+    revert x  -- goal is `⊢ ∀ (x : Nat), x = x`
+    exact Eq.refl
+  -- If you `revert` a hypothesis, then the goal becomes an implication. This is perhaps the more useful use case of `revert`
+  example (x y : Nat) (h : x = y) : y = x := by
+  revert h
+  exact Eq.symm
+  -- `revert`ing a name will revert any names that depend on it too.
+  example (x y : Nat) (h : x = y) : y = x := by
+    revert x -- *`⊢ ∀ (x : Nat), x = y → y = x`*
+    intros
+    apply Eq.symm
+    assumption
+  -- Ofc, you can `revert` multiple things at once
+  example (x y : Nat) (h : x = y) : y = x := by
+    revert x y -- *`⊢ ∀ (x y : Nat), x = y → y = x`*
+    intros
+    apply Eq.symm
+    assumption
+
+  -- NOTE: `generalize e = x` replaces all instances of an expression `e` in the current goal with a new variable name `x`, and asks to prove the universally quantified generalised goal.
+  --       Ofc, this may result in asking one to prove something unprovable.
+  example : 3 = 3 := by
+    generalize 3 = x
+    rfl
 end basic_tactics
