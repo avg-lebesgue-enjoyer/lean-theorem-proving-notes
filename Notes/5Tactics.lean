@@ -105,5 +105,5 @@ section basic_tactics
     apply Eq.trans
     · apply Eq.symm
       exact h_ac
-    · assumption
+    · assumption -- looks up the assumption `h_ab : a = b` already in the tactic state
 end basic_tactics
