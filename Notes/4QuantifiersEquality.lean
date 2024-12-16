@@ -419,6 +419,51 @@ end existential_crisis
 
 
 
+/- SECTION: More lean niceties -/
+section hospitality
+  -- NOTE: `by assumption`
+  -- The `assumption` tactic looks through the list of propositions in the current context, and if it finds one that matches the current goal, it applies it.
+  section gamer
+    variable (f : Nat → Nat)
+    variable (h : ∀ x : Nat, f x ≤ f (x + 1))
+
+    -- Here's a use of `by assumption`
+    example : f 0 ≤ f 3 :=
+      have : f 0 ≤ f 1 := h 0
+      have : f 0 ≤ f 2 := Nat.le_trans (by assumption) (h 1)
+      have : f 0 ≤ f 3 := Nat.le_trans (by assumption) (h 2)
+      this
+
+    -- Alternative syntax `⟨p⟩` for `show p by assumption` is really nice, and more robust since type inference of `p` isn't forced onto Lean
+    --  *`notation "‹" p "›" => show p by assumption`*
+    example : f 0 ≤ f 3 :=
+      have : f 0 ≤ f 1 := h 0
+      have : f 0 ≤ f 2 := Nat.le_trans ‹f 0 ≤ f 1› (h 1)
+      have : f 0 ≤ f 3 := Nat.le_trans ‹f 0 ≤ f 2› (h 2)
+      ‹f 0 ≤ f 3›
+
+    example
+      : f 0 ≥ f 1
+      → f 1 ≥ f 2
+      → f 0 = f 2
+      :=
+        fun _ : f 0 ≥ f 1 =>
+        fun _ : f 1 ≥ f 2 =>
+        have gamer : f 0 ≤ f 2 :=
+          calc f 0
+            _ ≤ f 1 := h 0
+            _ ≤ f 2 := h 1
+        -- Could use this too:
+        -- have otherGamer : f 2 ≤ f 0 :=
+        --   calc f 2
+        --     _ ≤ f 1 := by assumption
+        --     _ ≤ f 0 := by assumption
+        Nat.le_antisymm gamer (Nat.le_trans ‹f 2 ≤ f 1› ‹f 1 ≤ f 0›)
+  end gamer
+end hospitality
+
+
+
 /- EXERCISES: Classical existence laws -/
 section exercises_classical_existence
   open Classical
