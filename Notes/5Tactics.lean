@@ -63,5 +63,35 @@ end entering
 
 /- SECTION: Basic Tactics -/
 section basic_tactics
-  -- Shitpost
+  -- NOTE: `intro`
+  -- When facing a goal `(a : α) → β a`, the tactic `intro a` does the
+  --  `fun (a : α) => ⋯` abstraction for us
+  theorem gaming (p q r : Prop) : p ∧ (q ∨ r) ↔ (p ∧ q) ∨ (p ∧ r) := by
+    apply Iff.intro
+    case mp =>
+      intro h
+      apply h.right.elim
+      case left =>
+        intro hq
+        exact Or.inl ⟨h.left, hq⟩
+      case right =>
+        intro (hr : r) -- can chuck in a type annotation too
+        apply Or.inr
+        apply And.intro
+        · exact h.left
+        · exact hr
+    case mpr =>
+      intro (h : p ∧ q  ∨  p ∧ r)
+      apply And.intro
+      case left =>
+        apply h.elim
+        · exact And.left
+        · exact And.left
+      case right =>
+        apply h.elim
+        · exact Or.inl ∘ And.right
+        · exact Or.inr ∘ And.right
+  #print gaming
+
+  --
 end basic_tactics
