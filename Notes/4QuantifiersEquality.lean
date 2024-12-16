@@ -306,5 +306,104 @@ end the_calc_feature
 
 /- SECTION: ∃ -/
 section existential_crisis
-  -- Sugoma
+  #print Exists
+  /-
+    *`inductive Exists.{u} : {α : Sort u} → (α → Prop) → Prop               `*
+    *`number of parameters: 2                                               `*
+    *`constructors:                                                         `*
+    *`Exists.intro : ∀ {α : Sort u} {p : α → Prop} (w : α), p w → Exists p  `*  -- The predicate `p` itself being quantified over is implicit. This comes to bite us sometimes.
+  -/
+  -- So, `∃ x : α, p x` is more-or-less `Σ x : α, p x`, up to universe differences.
+  -- NOTE: `⟨·, ·⟩` notation is far more convenient than writing `Exists.intro · ·`.
+
+  example : ∃ x : Nat, x > 0 := ⟨1, Nat.zero_lt_one⟩
+  example
+    {x : Nat}
+    (h : x > 0)
+    : ∃ y : Nat, y < x :=
+      ⟨0, h⟩
+  example
+    {x y z : Nat}
+    (h_xy : x < y) (h_yz : y < z)
+    : ∃ w : Nat, x < w  ∧  w < z :=
+      ⟨y, ⟨h_xy, h_yz⟩⟩
+
+  -- The elimination rule is the **universal property of the coproduct**, and as such is implemented by pattern matching.
+  #check @Exists.elim -- *`: ∀ {α : Sort u} {p : α → Prop} {q : Prop},  (∃ a : α, p a) → (∀ a : α, p a → q) → q`*
+  def Exists.elim'.{u}
+    {α : Sort u} {p : α → Prop} {q : Prop}
+    (h_ext_p : ∃ a : α, p a)
+    (h_all_p_2_q : ∀ a : α, p a → q)
+    : q :=
+      let ⟨a, pf_a⟩ := h_ext_p
+      ; h_all_p_2_q a pf_a
+
+  example
+    {α : Type}
+    (p q : α → Prop)
+    (h : ∃ x : α, p x ∧ q x)
+    : ∃ x, q x ∧ p x :=
+      h.elim $
+        fun (a : α) (h' : p a ∧ q a) =>
+        ⟨a, And.intro h'.right h'.left⟩
+  example
+    {α : Type}
+    (p q : α → Prop)
+    (h : ∃ x : α, p x ∧ q x)
+    : ∃ x, q x ∧ p x :=
+      match h with
+      | ⟨(x : α), (⟨pf_p_x, pf_q_x⟩ : p x ∧ q x)⟩ =>
+        ⟨x, ⟨pf_q_x, pf_p_x⟩⟩
+
+  section even_example
+    def Nat.is_even (a : Nat) := ∃ d : Nat, a = 2 * d
+
+    theorem even_plus_even_is_even
+      {a b : Nat}
+      (h_a : a.is_even) (h_b : b.is_even)
+      : (a + b).is_even :=
+        let ⟨(α : Nat), (pf_α : a = 2 * α)⟩ := h_a
+        let ⟨(β : Nat), (pf_β : b = 2 * β)⟩ := h_b
+        let σ : Nat := α + β
+        suffices pf_σ : a + b = 2 * σ from ⟨σ, pf_σ⟩
+        calc a + b
+          _ = 2 * α + b
+              := congrArg (· + b) pf_α
+          _ = 2 * α + 2 * β
+              := congrArg (2 * α + ·) pf_β
+          _ = 2 * (α + β)
+              := (Nat.mul_add 2 α β).symm
+          _ = 2 * σ -- this last one isn't necessary
+              := rfl
+    -- Shortening the proof...
+    theorem even_plus_even_is_even'
+      {a b : Nat}
+      (h_a : a.is_even) (h_b : b.is_even)
+      : (a + b).is_even :=
+        let ⟨(α : Nat), (pf_α : a = 2 * α)⟩ := h_a
+        let ⟨(β : Nat), (pf_β : b = 2 * β)⟩ := h_b
+        let σ : Nat := α + β
+        suffices pf_σ : a + b = 2 * σ from ⟨σ, pf_σ⟩
+        by rw [pf_α, pf_β, ←Nat.mul_add]
+    -- Even more...
+    theorem even_plus_even_is_even''
+      {a b : Nat}
+      (h_a : a.is_even) (h_b : b.is_even)
+      : (a + b).is_even :=
+        let ⟨(α : Nat), (pf_α : a = 2 * α)⟩ := h_a
+        let ⟨(β : Nat), (pf_β : b = 2 * β)⟩ := h_b
+        let σ : Nat := α + β
+        suffices pf_σ : a + b = 2 * σ from ⟨σ, pf_σ⟩
+        by
+          simp [pf_α, pf_β]
+          simp [←Nat.mul_add]
+    -- Golf...
+    theorem even_plus_even_is_even'''
+      {a b : Nat}
+      (h_a : a.is_even) (h_b : b.is_even)
+      : (a + b).is_even :=
+        let ⟨(α : Nat), (pf_α : a = 2 * α)⟩ := h_a
+        let ⟨(β : Nat), (pf_β : b = 2 * β)⟩ := h_b
+        ⟨α + β, by simp [pf_α, pf_β, Nat.mul_add]⟩
+  end even_example
 end existential_crisis
