@@ -163,4 +163,12 @@ section basic_tactics
   example : 3 = 3 := by
     generalize 3 = x
     rfl
+  -- You can record your generalisation with a proof term though, to avoid over-eager generalisations
+  example : 2 + 3 = 5 := by
+    generalize h : 3 = x
+    rw [←h]
 end basic_tactics
+
+
+
+/- SECTION: More tactics -/
