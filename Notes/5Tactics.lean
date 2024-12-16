@@ -269,5 +269,32 @@ end moar
 
 /- SECTION: Structuring Tactic Proofs -/
 section structuring
-  -- amon gus
+  -- NOTE: `have` works exactly the same way when in tactics blocks
+  example
+    (p q r : Prop)
+    : p ∧ (q ∨ r)
+    → (p ∧ q) ∨ (p ∧ r)
+    := by
+      intro h
+      have h_p : p := h.left
+      have h_qvr : q ∨ r := h.right
+      exact
+        h_qvr.elim
+          (fun h_q => Or.inl ⟨h_p, h_q⟩)
+          (fun h_r => Or.inr $ show p ∧ r by constructor <;> assumption)
+  -- Another example
+  example
+    (p q r : Prop)
+    : p ∧ (q ∨ r) ↔ (p ∧ q) ∨ (p ∧ r)
+    := by
+      constructor
+      case mp =>
+        intro ⟨h_p, h_qvr⟩
+        cases h_qvr with
+        | inl h_q => apply Or.inl ; constructor <;> assumption
+        | inr h_r => apply Or.inr ; constructor <;> assumption
+      case mpr =>
+        intro h; cases h with
+        | inl hl => exact ⟨hl.left, .inl hl.right⟩
+        | inr hr => exact ⟨hr.left, .inr hr.right⟩
 end structuring
