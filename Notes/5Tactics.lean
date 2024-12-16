@@ -372,5 +372,54 @@ end structuring
 
 /- SECTION: Combinators -/
 section combinators
-  -- shitpost
+  -- NOTE: `;`
+  example (p q : Prop) (h_p : p) : p ∨ q := by
+    apply Or.inl ; assumption
+
+  -- NOTE: `<;>`
+  example (p q : Prop) (h_p : p) (h_q : q) : p ∧ q := by
+    constructor <;> assumption
+
+  -- NOTE: `first | ⋯ | ⋯`
+  example (p q : Prop) (hp : p) : p ∨ q := by
+    first | apply Or.inl; assumption | apply Or.inr; assumption
+  example (p q : Prop) (hq : q) : p ∨ q := by
+    first | apply Or.inl; assumption | apply Or.inr; assumption
+
+  -- NOTE: `try ⋯` *always succeeds*
+  example (p q r : Prop) (hp : p) (hq : q) (hr : r) : p ∧ q ∧ r := by
+    constructor           -- `⊢ p` and `⊢ q ∧ r`
+    <;> (try constructor) -- `⊢ p` and `⊢ q` and `⊢ r`
+    <;> assumption        -- no remaining goals
+  -- Be careful with `repeat`...
+  /-
+  `example : True := by      `
+  `  repeat (try assumption) `-- maximum recursion depth exceeded...!
+  -/
+
+  -- NOTE: `all_goals t` does what it says it does, and succeeds just when `t` succeeds on all of the goals
+  example (p q r : Prop) (hp : p) (hq : q) (hr : r) : p ∧ q ∧ r := by
+    constructor
+    all_goals (try constructor)
+    all_goals assumption
+
+  -- NOTE: `any_goals t` tries `t` on all goals, and succeeds just when `t` succeeds on *some* goal
+  example (p q r : Prop) (hp : p) (hq : q) (hr : r) : p ∧ q ∧ r := by
+    constructor
+    any_goals constructor
+    all_goals assumption
+  -- This is really helpful...!
+  example
+    {p q r : Prop}
+    (hp : p) (hq : q) (hr : r)
+    : p ∧ ((p ∧ q) ∧ r) ∧ (q ∧ r ∧ p) := by
+      repeat (any_goals constructor)
+      all_goals assumption
 end combinators
+
+
+
+/- SECTION: `rewrite` (aka `rw`) and `simp` -/
+section rewriting
+  -- shitpost
+end rewriting
