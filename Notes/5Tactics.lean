@@ -230,7 +230,6 @@ section moar
   example (p q : Nat → Prop) : (∃ x, p x ∧ q x) → ∃ x, q x ∧ p x := by
     intro ⟨x, h⟩ -- if you decompose `h` right here, Lean is actually able to auto-complete the goal remaining after the next line!
     exists x -- says that we wish to introduce a witness to the goal `∃ x, q x ∧ p x` under the name `x`
-    have h_px : p x := h.left
-    have h_qx : q x := h.right
+    have ⟨h_px, h_qx⟩ := h
     constructor <;> assumption
 end moar
