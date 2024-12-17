@@ -444,3 +444,127 @@ end rewriting
 
 
 /- SECTION: `simp` -/
+section the_simp
+  -- NOTE: `simp` applies lots of rewrites, and combines them with other known rules to try and simplify terms
+  example (x y z : Nat) : (x + 0) * (0 + y * 1 + z * 0) = x * y := by
+    simp
+  example
+    (x y z : Nat) (p : Nat → Prop)
+    (h : p (x * y))
+    : p ((x + 0) * (0 + y * 1 + z * 0))
+    := by
+      -- *`⊢ p ((x + 0) * (0 + y * 1 + z * 0))`*
+      simp
+      -- *`⊢ p (x * y)`*
+      assumption
+
+  -- Some examples with lists
+  open List in
+  example (xs : List Nat) : reverse (xs ++ [1, 2, 3]) == [3, 2, 1] ++ reverse xs := by
+    simp
+  open List in
+  example (xs ys : List α) : length (reverse (xs ++ ys)) = length xs + length ys := by
+    simp -- *`⊢ ys.length + xs.length = xs.length + ys.length`*
+    rw [Nat.add_comm] -- this could've been a `simp` call
+
+  -- `simp` can take a list of arguments just like `rw` does
+  open List in
+  example (xs ys : List α) : length (reverse (xs ++ ys)) = length xs + length ys := by
+    simp [Nat.add_comm] -- Use all `@[simp]` rules and use `Nat.add_comm` while simplifying
+
+  -- You can use the keyword `at` to simplify on some assumption
+  example
+    (x y z : Nat) (p : Nat → Prop)
+    (h : p ((x + 0) * (0 + y * 1 + z * 0)))
+    : p (x * y) := by
+      -- *`(h : p ((x + 0) * (0 + y * 1 + z * 0))) ⊢ p (x * y)`*
+      simp at h
+      -- *`(h : p (x * y)) ⊢ p (x * y)`*
+      assumption
+  -- If you want to try simplifying all hypotheses and the goal, you can `simp ⋯ at *`
+  section at_example
+    -- For the remainder of the section (*`local`*), add `attribute simp` to `Nat.mul_comm` etc.
+    attribute [local simp] Nat.mul_comm Nat.mul_assoc Nat.mul_left_comm
+    attribute [local simp] Nat.add_assoc Nat.add_comm Nat.add_left_comm
+    --
+    example
+      (w x y z : Nat) (p : Nat → Prop)
+      (h : p (x * y + z * w * x))
+      : p (x * w * z + y * x)
+      := by
+        -- *`h : p (x * y  + z * w * x)`*
+        -- *`⊢   p (x * w * z  +  y * x)`*
+        simp at *
+        -- *`h : p (x * y  +  w * (x * z))`*    NOTE: `simp` put the inside expression here into a *canonical form*
+        -- *`⊢   p (x * y  +  w * (x * z))`*    NOTE: `simp` put the inside expression here into the *same* canonical form
+        assumption
+    --
+    example
+      (x y z : Nat) (p : Nat → Prop)
+      (h_xy : p (1 * x + y))
+      (h_xz : p (x * z * 1))
+      : p (y + 0 + x) ∧ p (z * x)
+      := by
+        -- *`h_xy : p (1 * x  +  y)`*
+        -- *`h_xz : p (x * z * 1)`*
+        -- *`⊢ p (y + 0 + x)  ∧  p (z * x)`*
+        simp at *
+        -- *`h_xy : p (x + y)`*, in canonical form
+        -- *`h_xz : p (x * z)`*, in canonical form
+        -- *`⊢ p (x + y)  ∧  p (x * z)`*, in canonical form
+        ; constructor   -- Goals *`⊢ p (x + y)`* and *`⊢ p (x * z)`*
+        <;> assumption  -- Both goals are already known
+  end at_example
+
+  -- `simp` recognises the `←⋯` syntax just like `rw`
+  section left_example
+    def f (m n : Nat) : Nat := m + n + m
+    -- The definition of `f` is a fact, so it may be used in the following
+    example
+      {m n : Nat}
+      (h_ne1 : n = 1)
+      (h_0em : 0 = m)
+      : f m n = n
+      := by
+        simp [h_ne1, ←h_0em, f] -- The `←` on `←h_0em` is necessary because rewrites are done in the direction *left-replaced-by-right*
+  end left_example
+
+  -- To use all local hypotheses while `simp`lifying, pass `[*]` as an argument
+  example
+    (f : Nat → Nat)
+    (k : Nat)
+    (h_f0_e_0 : f 0 = 0)
+    (h_k_e_0  : k   = 0)
+    : f k = 0
+    := by
+      simp [*] -- same as `simp [h_f0_e_0, h_k_e_0]`
+  -- You can pass additional stuff too
+  example
+    (u w x y z : Nat)
+    (_ : x = y + z)
+    (_ : w = u + x)
+    : w = z + y + u
+    := by
+      simp [*, Nat.add_assoc, Nat.add_comm]
+
+  -- `simp` is also set up to do propositional rewriting, including replacing terms by `true`.
+  def propositonal_0 (p q : Prop) (_ : p) : p ∧ q ↔ q := by
+    simp [*]
+  #print propositonal_0
+  def propositional_1 (p q : Prop) (_ : p) : p ∨ q := by
+    simp [*]  -- Automatically introduces the constructor `Or.inl`
+  #print propositional_1
+  def propositional_2 (p q r : Prop) (h_p : p) (h_q : q) : p ∧ (q ∨ r) := by
+    simp [*]
+  #print propositional_2
+  #print eq_true
+
+  example
+    (_ _ x x' y y' _ : Nat) (_ : Nat → Prop)
+    (h_x : x + 0 = x')
+    (h_y : y + 0 = y')
+    : x + y + 0 = x' + y'
+    := by
+      simp at *
+      simp [*]
+end the_simp
