@@ -664,5 +664,177 @@ end the_simp
 
 /- SECTION: `split` -/
 section the_split
-  -- ligma
+  def f' (x y z : Nat) : Nat :=
+    match x, y, z with
+    | 5, _, _ => y
+    | _, 5, _ => y
+    | _, _, 5 => y
+    | _, _, _ => 1
+
+  -- `split` breaks apart functions/expressions that depend on different cases.
+  example (x y z w : Nat) : x ≠ 5 → y ≠ 5 → z ≠ 5 → z = w → f' x y w = 1 := by
+    intros      -- Throw in assumptions
+    simp [f']   -- Unfold definition of `f'`
+    split       -- Break apart the `match` expression
+    <;> try contradiction -- most of the cases pattern match `x ≠ 5` (etc.) against `5`, resulting in an assumption `: 5 ≠ 5`
+    rfl         -- The remaining thing to show is `: 1 = 1`
+
+  def g (xs ys : List Nat) : Nat :=
+    match xs, ys with
+    | [a, b], _       => a + b + 1
+    | _,      [b, _]  => b + 1
+    | _,      _       => 1
+
+  -- Can narrow `split` into a particular hypothesis
+  example (xs ys : List Nat) (h : g xs ys = 0) : False := by
+    simp [g] at h     -- Unfold the definition of `g` at the assumption `h`
+    split at h        -- Split into cases depending on the behaviour of `h`
+    <;> contradiction -- Find contradictions using arithmetic rules
 end the_split
+
+
+
+/- SECTION: Make-your-own tactic! -/
+section byo
+  -- Define a new tactic called `triv`
+  syntax "triv" : tactic
+  -- Uses of `triv` invoke `assumption`
+  macro_rules
+  | `(tactic| triv) => `(tactic| assumption)
+
+  example (_ : p) : p := by triv
+
+  -- Uses of `triv` now invoke the previous lot of stuff that `triv` tries (i.e. just `assumption`), and also `rfl`
+  macro_rules
+  | `(tactic| triv) => `(tactic| rfl)
+
+  example {α : Type} (x : α) : x = x := by triv
+  example (x : α) (h : p) : x = x  ∧  p := by constructor <;> triv
+
+  -- Recursively extend `triv`
+  macro_rules | `(tactic| triv) => `(tactic| constructor <;> triv)
+
+  example (x : α) (h : p) : x = x  ∧  p := by triv
+end byo
+
+
+
+/- EXERCISES: (2) Sweet -/
+section ex_2
+  def the_ex_2
+    (p q r : Prop)
+    (h_p : p)
+    : (p ∨ q ∨ r)
+    ∧ (q ∨ p ∨ r)
+    ∧ (q ∨ r ∨ p)
+    := by
+      (apply And.intro <;> try apply And.intro) <;> first | (apply Or.inl ; assumption) | (apply Or.inr ∘ Or.inl ; assumption) | (apply Or.inr ∘ Or.inr ; assumption)
+  #print the_ex_2
+end ex_2
+
+
+
+/- EXERCISES: (1) -/
+section ex_1_ch_2_first
+  variable (p q r : Prop)
+
+  -- commutativity of ∧ and ∨
+  example : p ∧ q ↔ q ∧ p := by
+    constructor
+    <;> (simp ; intros ; constructor ; repeat assumption)
+  example : p ∨ q ↔ q ∨ p := by
+    constructor
+    <;> intros h
+    <;> (first | simp [Or.comm] | simp [Or.comm] at h)
+    <;> assumption
+  -- associativity of ∧ and ∨
+  example : (p ∧ q) ∧ r ↔ p ∧ (q ∧ r) := by
+    constructor
+    case mp =>
+      intro
+      | ⟨⟨hp, hq⟩, hr⟩ =>
+        constructor <;> try constructor
+        all_goals assumption
+    case mpr =>
+      intro
+      | ⟨hp, ⟨hq, hr⟩⟩ =>
+        constructor <;> try constructor
+        all_goals assumption
+  example : (p ∨ q) ∨ r ↔ p ∨ (q ∨ r) := by
+    constructor
+    case mp =>
+      intros h
+      cases h with
+      | inl h' =>
+        cases h'
+        · apply Or.inl ; assumption
+        · apply Or.inr ; apply Or.inl ; assumption
+      | inr h' =>
+        apply Or.inr ∘ Or.inr ; assumption
+    case mpr =>
+      intros h
+      cases h with
+      | inl h' =>
+        apply Or.inl ∘ Or.inl ; assumption
+      | inr h' =>
+        cases h' with
+        | inl => apply Or.inl ; apply Or.inr ; assumption
+        | inr => apply Or.inr ; assumption
+  -- distributivity
+  example : p ∧ (q ∨ r) ↔ (p ∧ q) ∨ (p ∧ r) := by
+    constructor
+    case mp =>
+      intro h ; match h with
+      | ⟨h_p, h_qvr⟩ =>
+      cases h_qvr <;> first | apply Or.inl ; (constructor <;> assumption) | apply Or.inr ; (constructor <;> assumption)
+    case mpr =>
+      intro h
+      constructor
+      · cases h
+        <;> (rename_i h' ; exact h'.left)
+      · cases h
+        <;> first
+          | apply Or.inl ; rename_i h' ; exact h'.right
+          | apply Or.inr ; rename_i h' ; exact h'.right
+
+  -- NOTE: I just don't have the motivation to do more of these...
+
+  -- example : p ∨ (q ∧ r) ↔ (p ∨ q) ∧ (p ∨ r) := by
+
+  -- -- other properties
+  -- example : (p → (q → r)) ↔ (p ∧ q → r) := sorry
+  -- example : ((p ∨ q) → r) ↔ (p → r) ∧ (q → r) := sorry
+  -- example : ¬(p ∨ q) ↔ ¬p ∧ ¬q := sorry
+  -- example : ¬p ∨ ¬q → ¬(p ∧ q) := sorry
+  -- example : ¬(p ∧ ¬p) := sorry
+  -- example : p ∧ ¬q → ¬(p → q) := sorry
+  -- example : ¬p → (p → q) := sorry
+  -- example : (¬p ∨ q) → (p → q) := sorry
+  -- example : p ∨ False ↔ p := sorry
+  -- example : p ∧ False ↔ False := sorry
+  -- example : (p → q) → (¬q → ¬p) := sorry
+end ex_1_ch_2_first
+
+
+
+/- EXERCISES: (1) ch_3 -/
+section ex_1_ch_3_ex_1
+  variable (α : Type) (p q : α → Prop)
+
+  example : (∀ x, p x ∧ q x) ↔ (∀ x, p x) ∧ (∀ x, q x) := by
+    constructor
+    case mp =>
+      intro h
+      constructor <;> intros x
+      · exact And.left  $ h x
+      · exact And.right $ h x
+    case mpr =>
+      intro ; intro
+      constructor <;> simp [*]
+  example : (∀ x, p x → q x) → (∀ x, p x) → (∀ x, q x) := by
+    intros
+    simp [*]
+  example : (∀ x, p x) ∨ (∀ x, q x) → ∀ x, p x ∨ q x := by
+    intro h
+    cases h <;> intro <;> simp [*]
+end ex_1_ch_3_ex_1
