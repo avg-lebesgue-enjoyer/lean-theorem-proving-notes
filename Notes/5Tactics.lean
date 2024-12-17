@@ -567,4 +567,102 @@ section the_simp
     := by
       simp at *
       simp [*]
+
+  -- NOTE: The more the `simp`lifier knows about your current project, the more powerful it becomes.
+  section da_powa
+    def mk_symm {α : Type} (xs : List α) := xs ++ xs.reverse
+
+    theorem reverse_mk_symm
+      {α : Type}
+      (xs : List α)
+      : (mk_symm xs).reverse = mk_symm xs
+      := by
+        simp [mk_symm]
+    #print reverse_mk_symm
+
+    example
+      (xs ys : List Nat)
+      : (xs ++ mk_symm ys).reverse == mk_symm ys ++ xs.reverse
+      := by
+        simp [reverse_mk_symm]
+    example
+      (xs ys : List Nat)
+      (p : List Nat → Prop)
+      (h : p (xs ++ mk_symm ys).reverse)
+      : p (mk_symm ys ++ xs.reverse)
+      := by
+        simp [reverse_mk_symm] at h
+        assumption
+
+    -- Since `reverse_mk_symm` is usually the right thing to do when `simp`ing, we can instruct `simp` to always do so
+    -- The `local` part here says to only do so *within* the current `section`.
+    attribute [local simp] reverse_mk_symm -- Could instead have `@[simp] theorem reverse_mk_symm ⋯` upon definition
+
+    example
+      (xs ys : List Nat)
+      : (xs ++ mk_symm ys).reverse == mk_symm ys ++ xs.reverse
+      := by
+        simp
+    example
+      (xs ys : List Nat)
+      (p : List Nat → Prop)
+      (h : p (xs ++ mk_symm ys).reverse)
+      : p (mk_symm ys ++ xs.reverse)
+      := by
+        simp at h
+        assumption
+
+    -- `simp only` and `-` do what you think they do
+    theorem gamer0
+      (xs ys : List Nat) (p : List Nat → Prop)
+      (h : p (xs ++ mk_symm ys).reverse)
+      : p (mk_symm ys ++ xs.reverse)
+      := by
+        simp at h; assumption
+    #print gamer0 -- Uses `reverse_mk_symm`
+
+    theorem gamer1
+      (xs ys : List Nat) (p : List Nat → Prop)
+      (h : p (xs ++ mk_symm ys).reverse)
+      : p ((mk_symm ys).reverse ++ xs.reverse)
+      := by
+        simp [-reverse_mk_symm] at h; assumption
+    #print gamer1 -- No reference to `reverse_mk_symm`
+
+    theorem gamer2
+      (xs ys : List Nat) (p : List Nat → Prop)
+      (h : p (xs ++ mk_symm ys).reverse)
+      : p ((mk_symm ys).reverse ++ xs.reverse)
+      := by
+        simp only [List.reverse_append] at h; assumption
+    #print gamer2 -- Only uses the `List.reverse_append` rule in addition to `rewrite`ing functionality
+  end da_powa
+
+  -- NOTE: Contextual simplifications use facts in the known context to solve goals
+  -- Here, this is uses the contextual fact that `x = 0` on the inside of then `then` block
+  theorem sugoma0 : if x = 0 then y + x = y else x ≠ 0 := by
+    simp (config := { contextual := true })
+  #print sugoma0 -- Refernces `Eq.refl (x = 0)`; i.e. is indeed utilising the fact that `x = 0` in the `then` block
+  -- Here, this uses the contextual fact `h : x = 0` in the body of the `∀` abstraction
+  set_option linter.unusedVariables false
+  theorem sugoma1 : ∀ (x : Nat) (h : x = 0), y + x = y := by
+    simp (config := { contextual := true })
+  set_option linter.unusedVariables true
+  #print sugoma1 -- References `h`; i.e. is indeed using the context-known `h : x = 0` in the conclusion
+
+  -- NOTE: Arithmetical simplifications use arithmetic laws lol
+  def funny {x y : Nat} : 0 < 1 + x  ∧  x + y + 2 ≥ y + 1 := by
+    -- Just applying `simp` doesn't cut it here
+    simp (config := { arith := true }) -- This uses arithmetic facts too, like `Nat.Linear.ExprCnstr.eq_true_of_isValid`, whatever that is!
+  #print funny
+  -- `simp_arith` is shorthand for `simp (config := { arith := true })`
+  example {x y : Nat} : 0 < 1 + x  ∧  x + y + 2 ≥ y + 1 := by
+    simp_arith
 end the_simp
+
+
+
+/- SECTION: `split` -/
+section the_split
+  -- ligma
+end the_split
