@@ -714,3 +714,146 @@ namespace ligma
   end Nat
 end ligma
 end ex_1
+
+
+
+/- EXERCISES: (2) -/
+section ex_2
+namespace ligma
+  inductive List.{u} (α : Type u) : Type u where
+    | nil   : List α
+    | cons  : α → List α → List α
+    deriving Repr
+
+  namespace List
+    open Nat
+
+    /- SECTION: ++ -/
+    def append.{u} {α : Type u} (as bs : List α) : List α :=
+      match as with
+      | nil => bs
+      | cons a as' => cons a (as'.append bs)
+    instance {α : Type u} : Append (List α) where append := List.append
+    @[simp] theorem lem_nil_append.{u}
+      {α : Type u}
+      (as : List α)
+      : nil ++ as = as
+      := rfl
+    @[simp] theorem lem_cons_append.{u}
+      {α : Type u}
+      (a : α)
+      (as bs : List α)
+      : (cons a as) ++ bs = cons a (as ++ bs)
+      := rfl
+
+    @[simp] theorem lem_append_cons.{u}
+      {α : Type u}
+      (as : List α)
+      : as ++ nil = as
+      := by
+        induction as
+        case nil          => rfl
+        case cons a as ih => simp [ih]
+
+    @[simp] theorem thm_append_assoc.{u}
+      {α : Type u}
+      (as bs cs : List α)
+      : (as ++ bs) ++ cs = as ++ (bs ++ cs)
+      := by
+      induction as
+      case nil  => simp
+      case cons => simp ; assumption
+
+    /- SECTION: length -/
+    def length.{u} {α : Type u} : List α → Nat
+      | nil       => 0
+      | cons _ as => 1 + as.length
+    @[simp] theorem lem_length_nil.{u}
+      {α : Type u}
+      : (@nil α).length = 0 := rfl
+    @[simp] theorem lem_length_cons.{u}
+      {α : Type u}
+      (a : α)
+      (as : List α)
+      : (cons a as).length = 1 + as.length
+      := rfl
+
+    @[simp] theorem thm_length_hom.{u}
+      {α : Type u}
+      (as bs : List α)
+      : length (as ++ bs) = length as + length bs
+      := by
+      induction as
+      case nil          => simp
+      case cons a as ih => simp [ih]
+
+    /- SECTION: reverse -/
+    def reverse.{u} {α : Type u} : List α → List α
+      | nil => nil
+      | cons a as => as.reverse ++ (cons a nil)
+    @[simp] theorem lem_reverse_nil : nil.reverse = (nil : List α) := rfl
+    @[simp] theorem lem_reverse_cons.{u}
+      {α : Type u}
+      (a : α) (as : List α)
+      : (cons a as).reverse = as.reverse ++ (cons a nil)
+      := rfl
+
+    theorem thm_length_reverse.{u}
+      {α : Type u}
+      (as : List α)
+      : length (reverse as) = length as
+      := by
+        induction as
+        case nil          => rfl
+        case cons a as ih => simp [ih, thm_add_comm _ 1]
+
+    theorem thm_reverse_append.{u}
+      {α : Type u}
+      (as bs : List α)
+      : (as ++ bs).reverse = bs.reverse ++ as.reverse
+      := by
+        induction as
+        case nil          => simp
+        case cons a as ih => simp [ih]
+
+    theorem thm_reverse_involution.{u}
+      {α : Type u}
+      (as : List α)
+      : as.reverse.reverse = as
+      := by
+        induction as
+        case nil          => rfl
+        case cons a as ih => simp [thm_reverse_append, ih]
+  end List
+end ligma
+end ex_2
+
+
+
+/- EXERCISES: (3) -/
+section ex_3
+namespace sugoma
+  inductive Expression : Type where
+    | const : Nat → Expression
+    | var : Nat → Expression
+    | plus : Expression → Expression → Expression
+    | times : Expression → Expression → Expression
+
+  def Expression.evaluate (e : Expression) (vars : List Nat) : Option Nat :=
+    match e with
+    | .const c    => some c
+    | .var v      => vars.get? v
+    | .plus l r   => do
+      let l' ← l.evaluate vars
+      let r' ← r.evaluate vars
+      pure $ l' + r'
+    | .times l r  => do
+      let l' ← l.evaluate vars
+      let r' ← r.evaluate vars
+      pure $ l' * r'
+end sugoma
+end ex_3
+
+
+
+/- EXERCISES: (4) -/
