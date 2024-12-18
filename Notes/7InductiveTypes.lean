@@ -439,6 +439,7 @@ end inductive_families
 section ind_harder
   -- NOTE: Mutual induction is what you think it is
   mutual
+    -- Behind the scenes, this creates a product type and destructs from it, I think
     inductive Even : Nat → Prop where
       | zero_is_even : Even 0
       | succ_odd_is_even : (n : Nat) → Odd n → Even (n + 1)
@@ -500,4 +501,71 @@ section ind_harder
           apply (even_iff_0_mod_2 n').mpr
           exists d
   end
+
+  -- NOTE: You can also use *nested* types.
+  section nested_hack
+    -- We're doing this hack with `TreeList α` instead of using `List (Tree α)`
+    --  because theoretically you can't use `List (Tree α)` with "inductive types"
+    --  as they usually are.
+    -- (We'll see momentarily that Lean bridges the hack we're about to do for us.)
+    mutual
+      inductive Tree (α : Type u) where
+        | node : α → TreeList α → Tree α
+      inductive TreeList (α : Type u) where
+        | nil : TreeList α
+        | cons : Tree α → TreeList α → TreeList α
+    end
+
+    -- We'll show that `TreeList α ≃ List (Tree α)`
+    def f.{u} {α : Type u} : TreeList α → List (Tree α)
+      | .nil        => []
+      | .cons t ts  => t :: f ts
+    def g.{u} {α : Type u} : List (Tree α) → TreeList α
+      | []      => .nil
+      | t :: ts => .cons t (g ts)
+    -- Need to show that this is an isomorphism
+    theorem lem_g_o_f_eq_id.{u} {α : Type u} : g ∘ f = id (α := TreeList α) :=
+      -- Extracting this bit out so that we can explicitly recurse
+      let rec lem_funexted (ts : TreeList α) : (g ∘ f) ts = id ts := by
+        cases ts
+        case nil => simp [g, f]
+        case cons t ts =>
+        simp [g, f]
+        exact lem_funexted ts
+      by apply funext ; exact lem_funexted
+    theorem lem_f_o_g_eq_id.{u} {α : Type u} : f ∘ g = id (α := List (Tree α)) :=
+      let rec lem_funexted (ts : List (Tree α)) : (f ∘ g) ts = id ts := by
+        cases ts
+        case nil => simp [g, f]
+        case cons t ts =>
+        simp [g, f]
+        exact lem_funexted ts
+      by apply funext ; exact lem_funexted
+    theorem thm_TreeList_iso_List_Tree.{u}
+      {α : Type u}
+      : ∃ f : TreeList α → List (Tree α),
+        ∃ g : List (Tree α) → TreeList α,
+        f ∘ g = id  ∧  g ∘ f = id
+      := by
+        exists f
+        exists g
+        constructor
+        apply lem_f_o_g_eq_id
+        apply lem_g_o_f_eq_id
+
+    -- Now that we know that `TreeList α ≃ List (Tree α)`, we can carry any results
+    --  referencing `TreeList` to `List ∘ Tree` across the isomorphism.
+
+    -- **Lean knows this hack, and it does it for us**, automatically adding the
+    --  relevant isomorphism behind the scenes when we use the sugary `Tree'`:
+    inductive Tree'.{u} (α : Type u) where
+      | node : α → List (Tree' α) → Tree' α
+  end nested_hack
 end ind_harder
+
+
+
+/- EXERCISES: (1) -/
+section ex_1
+  --
+end ex_1
