@@ -216,5 +216,25 @@ namespace other_rec_dts
       | cons a as => by
         rw [cons_append, length, length, length_hom, Nat.add_assoc]
   end List
+
+  inductive BinTree where
+    | leaf : BinTree
+    | node : BinTree → BinTree → BinTree
+
+  inductive CountableTree where
+    | leaf : CountableTree
+    | sup  : (Nat → CountableTree) → CountableTree
+
+  namespace CountableTree
+    def succ (t : CountableTree) : CountableTree :=
+      sup (fun _ => t)
+
+    def toCountableTree : Nat → CountableTree
+      | 0     => leaf
+      | n + 1 => succ $ toCountableTree n
+
+    def omega : CountableTree :=
+      sup toCountableTree
+  end CountableTree
 end other_rec_dts
 end other_rec_dts
