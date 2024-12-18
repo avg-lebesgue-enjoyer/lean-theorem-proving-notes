@@ -432,3 +432,72 @@ section inductive_families
          | refl => refl
   end Eq'
 end inductive_families
+
+
+
+/- SECTION: Inductive Harder -/
+section ind_harder
+  -- NOTE: Mutual induction is what you think it is
+  mutual
+    inductive Even : Nat → Prop where
+      | zero_is_even : Even 0
+      | succ_odd_is_even : (n : Nat) → Odd n → Even (n + 1)
+    inductive Odd : Nat → Prop where
+      | succ_even_is_odd : (n : Nat) → Even n → Odd (n + 1)
+  end
+
+  -- NOTE: hehe mutual recursion proofs are exactly what you think they are :D
+  mutual
+    theorem even_iff_0_mod_2
+      (n : Nat)
+      : Even n ↔ (∃ d : Nat, n = 2 * d)
+      := by
+        constructor
+        case mp =>
+          intro h_even_n ; cases h_even_n
+          case zero_is_even => exists 0
+          case succ_odd_is_even n' h_n' =>
+          have ⟨d, h_d'⟩ := (odd_iff_1_mod_2 n').mp h_n'
+          rw [h_d']
+          simp_arith
+          exists d + 1
+        case mpr =>
+          intro ⟨d, h_d⟩
+          cases d
+          · simp_arith at h_d
+            rw [h_d]
+            apply Even.zero_is_even
+          case succ n' =>
+          simp_arith at h_d
+          have : Odd (2 * n' + 1) :=
+            (odd_iff_1_mod_2 $ 2 * n' + 1).mpr (by exists n')
+          rw [h_d]
+          apply Even.succ_odd_is_even
+          assumption
+
+    theorem odd_iff_1_mod_2
+      (n : Nat)
+      : Odd n ↔ (∃ d : Nat, n = 2 * d + 1)
+      := by
+        constructor
+        case mp =>
+          intro h
+          cases h with
+          | succ_even_is_odd n' h_even_n' =>
+            cases h_even_n'
+            · exists 0
+            · rename_i n' h_n'
+              have ⟨d', h_d'⟩ : (∃ d' : Nat, n' = 2 * d' + 1) := (odd_iff_1_mod_2 n').mp h_n'
+              exists d' + 1
+              simp [h_d', Nat.mul_add]
+        case mpr =>
+          intro ⟨d, h_d⟩
+          cases n
+          · contradiction
+          case succ n' =>
+          apply Odd.succ_even_is_odd
+          injection h_d with h_n'_eq_2d
+          apply (even_iff_0_mod_2 n').mpr
+          exists d
+  end
+end ind_harder
