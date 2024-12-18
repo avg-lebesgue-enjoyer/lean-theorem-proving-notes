@@ -853,12 +853,3 @@ namespace sugoma
       pure $ l' * r'
 end sugoma
 end ex_3
-
-
-
-/- EXERCISES: (4) -/
-section ex_4
-namespace sugoma
-  -- amon gus
-end sugoma
-end ex_4
