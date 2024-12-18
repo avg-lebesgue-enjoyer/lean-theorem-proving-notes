@@ -567,5 +567,147 @@ end ind_harder
 
 /- EXERCISES: (1) -/
 section ex_1
-  --
+namespace ligma
+  inductive Nat : Type where
+    | zero : Nat
+    | succ : Nat → Nat
+    deriving Repr
+  instance : OfNat Nat 0 where ofNat := Nat.zero
+  instance [OfNat Nat n] : OfNat Nat (.succ n) where ofNat := Nat.succ (OfNat.ofNat n)
+  #eval (0 : Nat)
+  #eval (1 : Nat)
+  #eval (2 : Nat)
+  namespace Nat
+    -- We're gonna write `0` instead of `Nat.zero` very often, so this really helps.
+    @[simp] theorem lem_zero_eq_zero      : zero      = 0 := rfl
+    @[simp] theorem lem_succ_zero_eq_one  : succ zero = 1 := rfl
+
+    /- SECTION: Addition -/
+    def add (x : Nat) : Nat → Nat
+      | zero    => x
+      | succ y  => succ $ add x y
+    instance : Add Nat where add := Nat.add
+    @[simp] theorem lem_add_zero (x : Nat) : x + 0 = x := rfl -- For example, this result only goes through with `0`, not with `Nat.zero`; the `@[simp] theorem lem_zero_eq_zero` bridges the gap properly for us
+    @[simp] theorem lem_add_succ (x y : Nat) : x + (succ y) = succ (x + y) := rfl
+
+    @[simp] theorem lem_zero_add (x : Nat) : 0 + x = x := by
+      induction x
+      case zero => rfl
+      case succ => simp [lem_add_succ] ; assumption
+    @[simp] theorem lem_succ_add (x y : Nat) : (succ x) + y = succ (x + y) := by
+      induction y
+      case zero => rfl
+      case succ => simp [lem_add_succ] ; assumption
+
+    @[simp] theorem thm_add_assoc (x y z : Nat) : (x + y) + z = x + (y + z) := by
+      induction z
+      case zero => rfl
+      case succ => simp [lem_add_succ] ; assumption
+    -- hmm all these proofs have been the same lol
+
+    theorem thm_add_comm (x y : Nat) : x + y = y + x := by
+      induction y
+      case zero => calc x + zero
+        _ = x         := lem_add_zero x
+        _ = zero + x  := (lem_zero_add x).symm
+      case succ => simp [lem_add_succ, lem_succ_add] ; assumption
+
+    theorem thm_add_right_cancel (c x y : Nat) : x + c = y + c → x = y := by
+      intro h
+      induction c
+      case zero =>
+        simp at h
+        assumption
+      case succ c ih =>
+        simp at h
+        exact ih h
+
+    theorem thm_add_left_cancel (c x y : Nat) : c + x = c + y → x = y := by
+      intro h
+      apply thm_add_right_cancel c
+      rw [thm_add_comm x, thm_add_comm y]
+      assumption
+
+    @[simp] theorem thm_add_zero_2_args_zero (x y : Nat) : x + y = 0 → x = 0 ∧ y = 0 := by
+      intro h
+      induction y
+      case zero       => simp at * ; assumption
+      case succ y ih  => injection h
+
+
+
+    /- SECTION: Multiplication -/
+    def mul (x : Nat) : Nat → Nat
+      | zero    => zero
+      | succ y  => mul x y + x
+    instance : Mul Nat where mul := Nat.mul
+    @[simp] theorem lem_mul_zero (x : Nat) : x * 0 = 0 := rfl
+    @[simp] theorem lem_mul_succ (x y : Nat) : x * succ y = x * y + x := rfl
+
+    @[simp] theorem lem_mul_one (x : Nat) : x * 1 = x := by
+      rw  [←lem_succ_zero_eq_one
+          , lem_mul_succ
+          , lem_zero_eq_zero
+          , lem_mul_zero
+          , lem_zero_add
+          ]
+
+    @[simp] theorem lem_zero_mul (x : Nat) : 0 * x = 0 := by
+      induction x
+      case zero => rfl
+      case succ => simp ; assumption
+
+    @[simp] theorem lem_succ_mul (x y : Nat) : succ x * y = x * y + y := by
+      induction y
+      case zero       => simp
+      case succ y ih  => simp [ih, thm_add_comm y x]
+
+    @[simp] theorem thm_dist_mul_add (a x y : Nat) : a * (x + y) = a * x + a * y := by
+      induction y
+      case zero       => rfl
+      case succ y ih  => simp [ih]
+
+    @[simp] theorem thm_mul_assoc (x y z : Nat) : (x * y) * z = x * (y * z) := by
+      induction z
+      case zero       => rfl
+      case succ z ih  => simp [ih]
+    -- hmm same proof as the previous result
+
+    theorem thm_mul_comm (x y : Nat) : x * y = y * x := by
+      induction y
+      case zero       => simp
+      case succ y ih  => simp [ih]
+    -- hmmmmm
+
+    @[simp] theorem thm_dist_add_mul (a b x : Nat) : (a + b) * x = a * x + b * x := by
+      simp [thm_mul_comm (a + b) x, thm_mul_comm x a, thm_mul_comm x b]
+
+    @[simp] theorem thm_euc_dom (x y : Nat) : x * y = 0 → x = 0 ∨ y = 0 := by
+      intro h
+      induction y
+      case zero => simp
+      case succ y ih =>
+      simp at h
+      have : x * y = 0 ∧ x = 0 := by apply thm_add_zero_2_args_zero ; assumption
+      have : x = 0 := this.right
+      apply Or.inl ; assumption
+
+    @[simp] theorem thm_mul_one_2_args_one (x y : Nat) : x * y = 1 → x = 1 ∧ y = 1 := by
+      intro h
+      induction y
+      case zero => injection h
+      case succ y ih =>
+      simp at h
+      cases x
+      case zero => simp at h
+      case succ x =>
+      simp [←lem_succ_zero_eq_one] at h
+      have := thm_add_zero_2_args_zero _ _ h
+      have h_y_eq_0__x__x_eq_0 := thm_add_zero_2_args_zero _ _ this.right
+      have h_y_eq_0 : y = 0 := h_y_eq_0__x__x_eq_0.left
+      have h_x_eq_0 : x = 0 := h_y_eq_0__x__x_eq_0.right
+      rw [h_x_eq_0, h_y_eq_0]
+      constructor <;> rfl
+  end Nat
+end ligma
 end ex_1
