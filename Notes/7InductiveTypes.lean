@@ -170,5 +170,51 @@ end the_nat
 
 /- SECTION: Other Recursive Data Types -/
 section other_rec_dts
-  --
+namespace other_rec_dts
+  inductive List (α : Type u) : Type u where
+    | nil   : List α
+    | cons  : α → List α → List α
+
+  namespace List
+    def append (as bs : List α) : List α :=
+      match as with
+      | nil => bs
+      | cons a as' => cons a (append as' bs)
+
+    theorem nil_append (as : List α) : append nil as = as := rfl
+
+    theorem cons_append
+      (a : α) (as bs : List α)
+      : append (cons a as) bs = cons a (append as bs)
+      := rfl
+
+    theorem append_nil : (as : List α) → append as nil = as
+      | nil       => rfl
+      | cons a as => by rw [cons_append, append_nil as]
+
+    theorem append_assoc
+      (as bs cs : List α)
+      : (as.append bs).append cs = as.append (bs.append cs)
+      :=
+        match as with
+        | nil => by
+          rw [nil_append, nil_append]
+        | cons a as => by
+          rw [cons_append, cons_append, append_assoc as, cons_append]
+
+    def length : List α → Nat
+      | nil => 0
+      | cons _ as => 1 + length as
+
+    theorem length_hom
+      (as bs : List α)
+      : (as.append bs).length = as.length + bs.length
+      :=
+      match as with
+      | nil => by
+        rw [nil_append, length, Nat.zero_add]
+      | cons a as => by
+        rw [cons_append, length, length, length_hom, Nat.add_assoc]
+  end List
+end other_rec_dts
 end other_rec_dts
