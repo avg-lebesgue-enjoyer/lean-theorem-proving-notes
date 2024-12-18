@@ -697,18 +697,19 @@ namespace ligma
       induction y
       case zero => injection h
       case succ y ih =>
-      -- *`show x = 1 ∧ y.succ = 1`*
+      -- *`⊢ x = 1 ∧ y.succ = 1`*
       simp at h
       cases x
       case zero => simp at h
       case succ x =>
-      -- *`show x.succ = 1 ∧ y.succ = 1`*
+      -- *`⊢ x.succ = 1 ∧ y.succ = 1`*
       simp [←lem_succ_zero_eq_one] at h
       have := thm_add_zero_2_args_zero _ _ h
       have h_y_eq_0__x__x_eq_0 := thm_add_zero_2_args_zero _ _ this.right
       have h_y_eq_0 : y = 0 := h_y_eq_0__x__x_eq_0.left
       have h_x_eq_0 : x = 0 := h_y_eq_0__x__x_eq_0.right
       rw [h_x_eq_0, h_y_eq_0]
+      -- *`⊢ succ 0 = 1 ∧ succ 0 = 1`*
       constructor <;> rfl
   end Nat
 end ligma
