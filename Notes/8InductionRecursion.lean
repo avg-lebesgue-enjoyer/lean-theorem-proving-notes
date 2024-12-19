@@ -688,6 +688,6 @@ section ex_5
       | _    => 0
     #eval sampleExpr.eval sampleSubs -- *`47`*, as expected
 
-    -- TODO: The rest of the exercise, from `def simpConst` onwards
+    -- FIXME: TODO: The rest of the exercise, from `def simpConst` onwards
   end Expr
 end ex_5
