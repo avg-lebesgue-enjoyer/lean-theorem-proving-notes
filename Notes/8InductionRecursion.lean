@@ -99,9 +99,9 @@ section woof
   -- NOTE: `WellFounded.fix` is a way to define functions *out* of a type `α`
   --       which admits a `WellFounded` relation `r`.
   /-
-    *`def WellFounded.fix.{u, v}                    `*
+    *`def WellFounded.fix.{u, w}                    `*
     *`  : {α : Sort u}                              `*
-    *`  → {C : α → Sort v}                          `*  -- Where we're defining a function out to (perhaps dependent on the input, which defines a dependent function)
+    *`  → {C : α → Sort w}                          `*  -- Where we're defining a function out to (perhaps dependent on the input, which defines a dependent function)
     *`  → {r : α → α → Prop}                        `*  -- The relation we're using
     *`  → WellFounded r                             `*  --  ^^ which must be well-founded
     *`  → ((x : α) → ((y : α) → r y x → C y) → C x) `*  -- A recursion principle:
@@ -114,10 +114,10 @@ section woof
   -/
   #print WellFounded.fix
   /-
-    *`def WellFounded.fixF.{u, v}                   `*
+    *`def WellFounded.fixF.{u, w}                   `*
     *`  : {α : Sort u}                              `*  -- Where did we come from
     *`  → {r : α → α → Prop}                        `*
-    *`  → {C : α → Sort v}                          `*  -- Where did we go *(`C`odomain)*
+    *`  → {C : α → Sort w}                          `*  -- Where did we go *(`C`odomain)*
     *`  → ((x : α) → ((y : α) → r y x → C y) → C x) `*  -- Recursion principle
     *`  → (x : α) → Acc r x → C x                   `*  -- Conclusion: A function defined on all `r`-*accessible* elements
     *`  := fun {α} {r} {C} F x a => Acc.rec (fun x₁ h ih => F x₁ ih) a  `*
@@ -187,10 +187,10 @@ section woof
     -- NOTE: Yeah so I failed...
 
     /-
-      *`def WellFounded.fixF.{u, v}                   `*
+      *`def WellFounded.fixF.{u, w}                   `*
       *`  : {α : Sort u}                              `*  -- Where did we come from
       *`  → {r : α → α → Prop}                        `*
-      *`  → {C : α → Sort v}                          `*  -- Where did we go *(`C`odomain)*
+      *`  → {C : α → Sort w}                          `*  -- Where did we go *(`C`odomain)*
       *`  → ((x : α) → ((y : α) → r y x → C y) → C x) `*  -- Recursion principle
       *`  → (x : α) → Acc r x → C x                   `*  -- Conclusion: A function defined on all `r`-*accessible* elements
     -/
@@ -350,7 +350,7 @@ section dep_match
     #check @Vector'.casesOn
     /-
       *`{α : Type u}`*
-      *`→ {motive : (a : Nat) → Vector α a → Sort v}`*
+      *`→ {motive : (a : Nat) → Vector α a → Sort w}`*
       *`→ {a : Nat} → (t : Vector α a)`*
       *`→ motive 0 nil`*
       *`→ ((a : α) → {n : Nat} → (as : Vector α n) → motive (n + 1) (cons a as))`*
@@ -532,6 +532,18 @@ namespace super_ligma
         assumption
       thm_add_right_cancel c x y h_swapped
 
+    @[simp] theorem thm_add_eq_0_implies_args_0 (x y : Nat) : x + y = 0 → x = 0 ∧ y = 0 :=
+      let lem_second_eq_0 : ∀ (x y : Nat), x + y = 0 → y = 0 :=
+        fun x y h =>
+          match y with
+          | zero => rfl
+          | succ y => by injection h
+      by
+        intro h
+        constructor
+        case left => rw [thm_add_comm] at h ; exact lem_second_eq_0 y x h
+        case right => exact lem_second_eq_0 x y h
+
     /- SECTION: `Nat.mul` -/
     def mul (x : Nat) : Nat → Nat
       | zero    => 0
@@ -555,7 +567,127 @@ namespace super_ligma
       | zero => rfl
       | succ y => by simp [lem_succ_mul x y] ; rw [←thm_add_assoc, thm_add_comm y x, thm_add_assoc]
 
-    -- TODO: All these lol
+    @[simp] theorem thm_mul_add (a x y : Nat) : a * (x + y) = a * x + a * y :=
+      match y with
+      | zero => rfl
+      | succ y => by simp [thm_mul_add a x y]
+
+    @[simp] theorem thm_mul_assoc (x y z : Nat) : x * (y * z) = (x * y) * z :=
+      match z with
+      | zero => rfl
+      | succ z => by simp [thm_mul_assoc x y z]
+
+    @[simp] theorem thm_mul_comm (x y : Nat) : x * y = y * x :=
+      match y with
+      | zero => by simp
+      | succ y => by simp [thm_mul_comm x y]
+
+    @[simp] theorem thm_add_mul (a b x : Nat) : (a + b) * x = a * x + b * x := by
+      rw [thm_mul_comm (a + b) x, thm_mul_comm a x, thm_mul_comm b x]
+      exact thm_mul_add x a b
+
+    @[simp] theorem thm_null_factor (x y : Nat) : x * y = 0 → x = 0 ∨ y = 0 :=
+      fun h =>
+      match y with
+      | zero => Or.inr rfl
+      | succ y => by
+        apply Or.inl
+        simp at h
+        apply (thm_add_eq_0_implies_args_0 (x * y) x h).right
+
+
+    @[simp] theorem thm_mul_left_cancel (c x y : Nat) (h_c_neq_0 : c ≠ 0) : c * x = c * y → x = y :=
+      fun h =>
+      match y with
+      | zero => by
+        simp at h
+        have : c = 0 ∨ x = 0 := thm_null_factor c x h
+        have : x = 0 := by simp [h_c_neq_0] at this ; assumption
+        assumption
+      | succ y => by
+        simp at h
+        cases x
+        case zero =>
+          simp at h
+          have := (thm_add_eq_0_implies_args_0 _ c h.symm).right
+          contradiction
+        case succ x =>
+          simp at h
+          have := thm_add_right_cancel c _ _ h
+          have := thm_mul_left_cancel c x y h_c_neq_0 this
+          rw [this]
+
+    -- TODO: thm_mul_right_cancel
+    @[simp] theorem thm_mul_right_cancel (c x y : Nat) (h_c_neq_0 : c ≠ 0) : x * c = y * c → x = y := by
+      intro h
+      rw [thm_mul_comm x, thm_mul_comm y] at h
+      apply thm_mul_left_cancel c <;> assumption
   end Nat
 end super_ligma
 end ex_1
+
+
+
+/- EXERCISES: (2) -/
+-- No, I'm not doing this. I get the point already, and I know how to
+--  use recursion to produce inductive proofs.
+
+
+
+/- EXERCISES: (3) -/
+-- I'm not quite sure what this means, but I am *not* writing `WellFounded.fix`
+--  on my own given that I don't know when to use `noncomputable` or not :/
+
+
+
+/- EXERCISES: (4) -/
+section ex_4
+namespace Vector'
+  def append {α : Type} : {n k : Nat} → Vector' α n → Vector' α k → Vector' α (n + k)
+    | 0, k, nil, bs =>
+      (by simp_arith : k = 0 + k)
+      ▸ bs
+    | Nat.succ n, k, cons a as, bs =>
+      have h_types_match : n + k + 1 = n.succ + k := calc n + k + 1
+        _ = .succ (n + k) := rfl
+        _ = n.succ + k := by rw [Nat.succ_add]
+      h_types_match
+      ▸ cons a (as.append bs)
+  -- Haha, no auxiliary functions needed >:)
+end Vector'
+end ex_4
+
+
+
+/- EXERCISES: (5) -/
+section ex_5
+  inductive Expr where
+    | const : Nat    → Expr
+    | var   : String → Expr -- `String` name of the variable
+    | plus  : Expr   → Expr → Expr
+    | times : Expr   → Expr → Expr
+    deriving Repr
+
+  namespace Expr
+    def sampleExpr : Expr :=
+        plus (times (var "x₀") (const 7)) (times (const 2) (var "x₁"))
+
+    def eval
+      (me : Expr)           -- `Expr`ession to evaluate
+      (subs : String → Nat) -- Map of substitutions for `String` variable names to `Nat`s
+      : Nat                 -- Resulting `eval`uated value
+      := match me with
+        | const c     => c
+        | var   v     => subs v
+        | plus  e₁ e₂ => e₁.eval subs + e₂.eval subs
+        | times e₁ e₂ => e₁.eval subs * e₂.eval subs
+
+    def sampleSubs : String → Nat
+      | "x₀" => 5
+      | "x₁" => 6
+      | _    => 0
+    #eval sampleExpr.eval sampleSubs -- *`47`*, as expected
+
+    -- TODO: The rest of the exercise, from `def simpConst` onwards
+  end Expr
+end ex_5
