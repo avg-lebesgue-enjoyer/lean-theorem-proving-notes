@@ -533,6 +533,28 @@ namespace super_ligma
       thm_add_right_cancel c x y h_swapped
 
     /- SECTION: `Nat.mul` -/
+    def mul (x : Nat) : Nat → Nat
+      | zero    => 0
+      | succ y  => x.mul y + x
+    instance : Mul Nat where mul := Nat.mul
+    @[simp] theorem lem_mul_0 (x : Nat) : x * 0 = 0 := rfl -- btw, this is so that Lean has the version of this result with `*` and `0` (as opposed to that with `mul` and `zero` written out) exposed to `simp`
+    @[simp] theorem lem_mul_succ (x y : Nat) : x * succ y = x * y + x := rfl
+
+    @[simp] theorem lem_mul_1 (x : Nat) : x * 1 = x := calc x * 1
+      _ = x * 0 + x := rfl
+      _ = 0 + x := by rw [lem_mul_0]
+      _ = x := by rw [lem_0_add]
+
+    @[simp] theorem lem_0_mul (x : Nat) : 0 * x = 0 :=
+      match x with
+      | zero => rfl
+      | succ x => by simp ; exact lem_0_mul x
+
+    @[simp] theorem lem_succ_mul (x y : Nat) : succ x * y = x * y + y :=
+      match y with
+      | zero => rfl
+      | succ y => by simp [lem_succ_mul x y] ; rw [←thm_add_assoc, thm_add_comm y x, thm_add_assoc]
+
     -- TODO: All these lol
   end Nat
 end super_ligma
