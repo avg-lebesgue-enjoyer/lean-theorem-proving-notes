@@ -396,3 +396,83 @@ section dep_match
      -/
   end Vector'
 end dep_match
+
+
+
+/- SECTION: Inaccessible Patterns -/
+section inacc_patterns
+  section da_im
+    inductive ImageOf {α β : Type u} (f : α → β) : β → Type u where
+      | imOf : (a : α) → ImageOf f (f a)
+    open ImageOf
+    def inverse {f : α → β} : (b : β) → ImageOf f b → α
+      | .(f a), imOf a => a
+      -- You **cannot** pattern-match on the expression `f a`;
+      --  this is literally *not a pattern*. It can't be a variable `b`
+      --  either, since typechecking requires that such `b` be identical to `f a`.
+      -- So, the argument **needs** to be there to typecheck.
+      -- The solution is to use an *inaccessible pattern match* `.(f a)`, which
+      --  *cannot* be used to construct data, but is necessary as an argument
+      --  nonetheless.
+    def inverse' {f : α → β} : (b : β) → ImageOf f b → α
+      | _, imOf a => a
+      -- The wildcard `_` can sometimes infer the desired inaccessible expression
+      --  from context and fill it in.
+    set_option pp.all true
+    #print inverse
+    #print inverse.match_1 -- haha, totally fucked
+    set_option pp.all false
+  end da_im
+
+  section da_vector
+  namespace Vector'
+    -- Shorthand for `map (· + ·)`
+    def add [Add α] : {n : Nat} → Vector' α n → Vector' α n → Vector' α n
+      | 0      , nil      , nil       => nil
+      | .succ _, cons a as, cons b bs => cons (a + b) (add as bs)
+    -- Force Lean to infer the constructor shape of `n`
+    def add' [Add α] : {n : Nat} → Vector' α n → Vector' α n → Vector' α n
+      | .(_), nil      , nil       => nil
+      | .(_), cons a as, cons b bs => cons (a + b) (add as bs)
+    -- shorthand; same as add''
+    def add'' [Add α] : {n : Nat} → Vector' α n → Vector' α n → Vector' α n
+      | _, nil      , nil       => nil
+      | _, cons a as, cons b bs => cons (a + b) (add as bs)
+    -- *Discriminant refinement* as in Lean 4 allows us to do this (even though technically the symbol `n` may change shape throughout, and so should be pattern matched against)
+    def add''' [Add α] {n : Nat} : Vector' α n → Vector' α n → Vector' α n
+      | nil      , nil       => nil
+      | cons a as, cons b bs => cons (a + b) (add as bs) -- Introduces a new symbol `n† : Nat` such that `n = n† + 1`; i.e. does the pattern-match for us and hides that away
+    -- Thanks to auto-implicit arguments, we can sweep the `{n : Nat}` under the rug too:
+    def add'''' [Add α] : Vector' α n → Vector' α n → Vector' α n
+      | nil      , nil       => nil
+      | cons a as, cons b bs => cons (a + b) (add as bs)
+    #check @add'''' -- `⋯ → {n : Nat} → ⋯`
+    -- These shorthands mean that it's easy to write other such functions; e.g.
+    def head' : Vector' α (n + 1) → α
+      | cons a _ => a
+    -- All the other definitions on `Vector'` we've seen so far can be sugared like this too
+  end Vector'
+  end da_vector
+end inacc_patterns
+
+
+
+/- SECTION: Match Expressions -/
+-- These exist
+
+
+
+/- SECTION: Local Recursive Declarations via `let rec` -/
+-- `let rec` exists, and so does `where`.
+
+
+
+/- EXERCISES: (1) -/
+-- *Re*-define `Nat`, `Nat.plus` and `Nat.times`, and *re*-prove all the stuff
+--  about them, but this time don't use tactics; just use the equation compiler
+--  and gaming pattern matching.
+section ex_1
+namespace super_ligma
+  -- Amon Gus
+end super_ligma
+end ex_1
