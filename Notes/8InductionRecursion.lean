@@ -216,5 +216,127 @@ section woof
   end woof
   end woof
 
-  -- hmm
+  -- hmm, not sure what the theory behind `noncomputable` is...
+  -- After doing a *tiny* bit of research, it seems like it's about the
+  --  difference between producing "computed" bytecode (used for `#eval`
+  --  and program evaluation) vs. being able to reduce λcalc expressions
+  --  anyway (i.e. `#reduce`).
+  -- This more-or-less stems from using principles of classical logic that
+  --  don't compute, like `Classical.em : ∀ (p : Prop), p ∨ ¬p`. To alleviate
+  --  my concern, **the logic done by Lean doesn't need to go to `#eval`uation**
+  --  **and it's okay if a theorem or smth is `noncomputable`**; we just care
+  --  that *code* is, of course, still computable.
+  -- `noncomputable` stuff can still be `#reduce`d, but not always `#eval`ed.
+  section woof2
+    open Nat
+    theorem lem_divF_decreases -- this Frankenstein's monster is me not looking at the @src and trying on my own, pestering the Lean stdlib whenever I found something useful
+      {x y : Nat}
+      (h : 0 < y  ∧  y ≤ x)
+      : x - y < x
+      := by
+        induction y
+        case zero => simp at h
+        case succ y ih =>
+        simp at h
+        cases x
+        case zero => contradiction
+        case succ x =>
+        simp at *
+        cases y
+        case zero => simp
+        case succ y =>
+        simp at *
+        have : y ≤ x := calc y
+          _ ≤ y + 1 := by simp
+          _ ≤ x     := h
+        have gaming : x - y < x + 1 := ih this
+        show x - (y + 1) < x + 1
+        calc x - (y + 1)
+          _ = x - y - 1 := by
+            cases x
+            case zero => rfl
+            case succ x =>
+            simp [Nat.add_sub_sub_add_right x y 0 1]
+          _ ≤ x - y     := by simp
+          _ < x + 1     := gaming
+    theorem lem_divF_decreases' -- This is what @src does. It's more clean, but I don't know the Lean stdlib inside-out, unfortunately
+      {x y : Nat}
+      (h : 0 < y  ∧  y ≤ x)
+      : x - y < x
+      := by
+        apply Nat.sub_lt
+        · exact Nat.lt_of_lt_of_le h.left h.right
+        · exact h.left
+    def div.F -- Iteration loop to use in fixed point lemma
+      (x : Nat)
+      (f : (x' : Nat) → x' < x → Nat → Nat)
+      (y : Nat)
+      : Nat
+      := if h : 0 < y ∧ y ≤ x
+        then f (x - y) (lem_divF_decreases h) y + 1
+        else 0
+    noncomputable def div := WellFounded.fix (measure id).wf div.F
+      -- NOTE: `measure : {α : Sort u} → (α → Nat) → WellFoundedRelation α`
+      #check measure
+      -- NOTE: `WellFoundedRelation.wf : ∀ {α : Sort u} [WellFoundedRelation α], WellFounded WellFoundedRelation.rel`
+      #check WellFoundedRelation.wf
+    #reduce div 8 2
+    -- `#eval div 8 2` -- *failed to compile definition, consider marking it as 'noncomputable' because it depends on 'div', and it does not have executable code*
+
+    -- example (x y : Nat)
+    --   : div x y = if 0 < y ∧ y ≤ x
+    --               then div (x - y) y + 1
+    --               else 0
+    --   := by
+    --     conv => lhs ; unfold div
+    -- example (x y : Nat) (h : 0 < y ∧ y ≤ x)
+    --   : div x y = div (x - y) y + 1
+    --   := by
+    --   conv => lhs ; unfold div
+    --   simp [h]
+  end woof2
+
+  section nat_2_bin
+    def natToBin : Nat → List Nat
+      | 0 => [0]
+      | 1 => [1]
+      | n + 2 =>
+        let rec coles (x : Nat) : (x + 2) / 2 < x + 2 -- hint to implicit `termination_by` to use this proof that the recursive call decreases. Lean is smart enough to use `gaming n` as the proof for the `decreases_by` tactic
+          := by
+            simp [Nat.lt_succ]
+            match x with
+            | 0     => show 0 ≤ 0 ; apply Nat.le_of_eq ; rfl
+            | 1     => simp
+            | x + 2 => apply Nat.le_of_lt ; exact coles x
+        natToBin ((n + 2) / 2) ++ [n % 2]
+    #eval! natToBin 1234
+  end nat_2_bin
+
+  section ack
+    def ack : Nat → Nat → Nat
+      | 0    , y      => y + 1
+      | x + 1, 0      => ack x 1
+      | x + 1, y + 1  => ack x $ ack (x + 1) y
+    -- Lean infers `termination_by x y => (x, y)`; the lexicographic order on `Nat × Nat`
+  end ack
+
+  section takeWhile
+    def takeWhile (p : α → Bool) (as : Array α) : Array α := go 0 #[]
+    where
+      go (i : Nat) (arr : Array α) : Array α :=
+        if h_index_ok : i < as.size then
+          let a := as.get ⟨i, h_index_ok⟩
+          if p a then
+            go (i + 1) (arr.push a)
+          else arr
+        else arr
+      termination_by as.size - i -- You give actual parameters of stuff that moves! btw, Lean is smart enough to infer this one itself
+  end takeWhile
 end woof
+
+
+
+/- SECTION: Mutual Recursion -/
+section mutual_recursion
+  -- amon gus
+end mutual_recursion
