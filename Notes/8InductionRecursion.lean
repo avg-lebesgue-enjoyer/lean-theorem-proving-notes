@@ -210,7 +210,7 @@ section woof
       := Acc.rec $
         fun
           (x' : α)
-          (h : ∀ (y : α), r y x' → Acc r y)
+          (_ : ∀ (y : α), r y x' → Acc r y)
           (ih : (y : α) → r y x' → C y)
         => F x' ih
   end woof
