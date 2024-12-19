@@ -469,10 +469,71 @@ end inacc_patterns
 
 /- EXERCISES: (1) -/
 -- *Re*-define `Nat`, `Nat.plus` and `Nat.times`, and *re*-prove all the stuff
---  about them, but this time don't use tactics; just use the equation compiler
---  and gaming pattern matching.
+--  about them, but this time don't use the `induction` tactic; just use the
+--  equation compiler and gaming pattern matching.
 section ex_1
 namespace super_ligma
-  -- Amon Gus
+  inductive Nat : Type where
+    | zero : Nat
+    | succ : Nat → Nat
+    deriving Repr
+  instance : OfNat Nat 0 where ofNat := .zero
+  instance : OfNat Nat 1 where ofNat := .succ .zero
+  @[simp] theorem lem_zero_eq_0 : Nat.zero = 0 := rfl
+  @[simp] theorem lem_succ_zero_eq_1 : Nat.succ Nat.zero = 1 := rfl
+  namespace Nat
+    /- SECTION: `Nat.add` -/
+    def add (x : Nat) : Nat → Nat
+      | zero    => x
+      | succ y  => succ $ x.add y
+    instance : Add Nat where add := Nat.add
+
+    @[simp] theorem lem_add_0 (x : Nat) : x + 0 = x := rfl
+    @[simp] theorem lem_add_succ (x y : Nat) : x + y.succ = succ (x + y) := rfl
+
+    @[simp] theorem lem_0_add (x : Nat) : 0 + x = x :=
+      match x with
+      | zero => rfl
+      | succ x => calc 0 + x.succ
+        _ = (0 + x).succ  := rfl
+        _ = x.succ        := congrArg succ $ lem_0_add x
+
+    @[simp] theorem lem_succ_add (x y : Nat) : x.succ + y = succ (x + y) :=
+      match y with
+      | zero => rfl
+      | succ y => calc x.succ + y.succ
+        _ = (x.succ + y).succ := rfl
+        _ = (x + y).succ.succ := congrArg succ $ lem_succ_add x y
+        _ = (x + y.succ).succ := rfl
+
+    @[simp] theorem thm_add_assoc (x y z : Nat) : x + (y + z) = (x + y) + z :=
+      match z with
+      | zero => rfl
+      | succ z => calc x + (y + succ z)
+        _ = x + succ (y + z)    := congrArg (x + ·) rfl
+        _ = succ (x + (y + z))  := rfl
+        _ = succ ((x + y) + z)  := congrArg succ $ thm_add_assoc x y z
+        _ = (x + y) + succ z    := rfl
+
+    theorem thm_add_comm (x y : Nat) : x + y = y + x :=
+      match y with
+      | zero => by simp
+      | succ y => by simp ; exact thm_add_comm x y
+
+    -- virtual division
+    @[simp] theorem thm_add_right_cancel (c x y : Nat) : x + c = y + c → x = y :=
+      match c with
+      | zero => id
+      | succ c => by simp ; exact thm_add_right_cancel c x y
+    @[simp] theorem thm_add_left_cancel (c x y : Nat) : c + x = c + y → x = y :=
+      fun h =>
+      have h_swapped : x + c = y + c := by
+        rw [thm_add_comm c x, thm_add_comm c y] at h
+        assumption
+      thm_add_right_cancel c x y h_swapped
+
+    /- SECTION: `Nat.mul` -/
+    -- TODO: All these lol
+  end Nat
 end super_ligma
 end ex_1
