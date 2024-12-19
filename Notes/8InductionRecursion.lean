@@ -343,5 +343,56 @@ end woof
 
 /- SECTION: Dependent Pattern Matching -/
 section dep_match
-  -- sus
+  inductive Vector' (α : Type u) : Nat → Type u where
+    | nil : Vector' α 0
+    | cons : α → {n : Nat} → Vector' α n → Vector' α (n + 1)
+  namespace Vector'
+    #check @Vector'.casesOn
+    /-
+      *`{α : Type u}`*
+      *`→ {motive : (a : Nat) → Vector α a → Sort v}`*
+      *`→ {a : Nat} → (t : Vector α a)`*
+      *`→ motive 0 nil`*
+      *`→ ((a : α) → {n : Nat} → (as : Vector α n) → motive (n + 1) (cons a as))`*
+      *`→ motive a t`*
+    -/
+
+    def tailAux (as : Vector' α m) : m = n + 1 → Vector' α n :=
+      Vector'.casesOn (motive := fun x _ => x = n + 1 → Vector' α n) as
+        (fun h : 0 = n + 1 => Nat.noConfusion h)
+        (fun (_ : α) (m : Nat) (as : Vector' α m) =>
+          fun (h : m + 1 = n + 1) =>
+            Nat.noConfusion h (fun h' : m = n => h' ▸ as)) -- `h' ▸ as` rewrites `as : Vector' α m` to `as : Vector' α n` because `h' : m = n`
+    #print Nat.noConfusionType
+    def tail {n : Nat} (as : Vector' α (n + 1)) : Vector' α n :=
+      tailAux as rfl
+
+    -- This is a real pain in the ass. Instead, Lean's equation compiler is
+    --  really good and can handle stuff for us.
+
+    def head : {n : Nat} → Vector' α (n + 1) → α
+      | _, cons a _ => a
+      -- This list of patterns is exhaustive, and Lean knows this!
+    def tail' : {n : Nat} → Vector' α (n + 1) → Vector' α n
+      | _, cons _ as => as
+    theorem eta
+      : ∀ {n : Nat} (as : Vector' α (n + 1)),
+          cons (head as) (tail as) = as
+      | _, cons _ _ => rfl
+    def map (f : α → β → γ) : {n : Nat} → Vector' α n → Vector' β n → Vector' γ n
+      | 0       , nil      , nil       => nil
+      | .succ _ , cons a as, cons b bs => cons (f a b) (map f as bs)
+    def zip : {n : Nat} → Vector' α n → Vector' β n → Vector' (α × β) n
+      := map ((·, ·))
+    #print map -- holy shit
+    #print map.match_1 -- *holy shit*
+    set_option pp.all true
+    #print map.match_1 -- **holy shit**
+    set_option pp.all false
+
+    /- *The map function is even more tedious to define by hand than the tail*
+     - *function. We encourage you to try it, using recOn, casesOn and noConfusion.*
+     - ...uh, yeah, **no thanks**
+     -/
+  end Vector'
 end dep_match
