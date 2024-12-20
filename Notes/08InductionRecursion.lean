@@ -1,4 +1,4 @@
-/- @file Notes/8InductionRecursion.lean
+/- @file Notes/08InductionRecursion.lean
  - @src https://lean-lang.org/theorem_proving_in_lean4/induction_and_recursion.html
  -/
 

@@ -1,4 +1,4 @@
-/- @file Notes/9Structures.lean
+/- @file Notes/09Structures.lean
  - @src https://lean-lang.org/theorem_proving_in_lean4/structures_and_records.html
  -/
 

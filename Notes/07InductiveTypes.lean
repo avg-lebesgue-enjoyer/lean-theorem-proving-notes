@@ -1,4 +1,4 @@
-/- @file Notes/7InductiveTypes.lean
+/- @file Notes/07InductiveTypes.lean
  - @src https://lean-lang.org/theorem_proving_in_lean4/inductive_types.html#enumerated-types
  -/
 

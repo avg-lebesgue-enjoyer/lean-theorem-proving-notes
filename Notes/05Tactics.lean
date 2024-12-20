@@ -1,4 +1,4 @@
-/- @file Notes/5Tactics.lean
+/- @file Notes/05Tactics.lean
  - @src https://lean-lang.org/theorem_proving_in_lean4/tactics.html
  -/
 

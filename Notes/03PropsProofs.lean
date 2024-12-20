@@ -1,4 +1,4 @@
-/- @file Notes/3PropsProofs.lean
+/- @file Notes/03PropsProofs.lean
  - @src https://lean-lang.org/theorem_proving_in_lean4/propositions_and_proofs.html
  -/
 
