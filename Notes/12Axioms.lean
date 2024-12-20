@@ -128,4 +128,73 @@ section haha_prelude
 
   -- NOTE: The upshot of this exposition is that **`Classical.choice`** is really the
   --  "fundamental" axiom in classical logic, at least in Lean (not `Classical.em`!).
+  -- It's still worth emphasising though that `Classical.choice` is what tells us that
+  --  we can prove logical equivalences by reducing to boolean truth tables.
 end haha_prelude
+
+
+
+/- SECTION: `propext` -/
+section the_propext
+namespace the
+  -- The axiom of `prop`ositional `ext`ensionality says exactly what you think
+  --  it does: the (thin) `Prop` category (preorder) is skeletal.
+  axiom propext {p q : Prop} : (p ↔ q) → (p = q)
+
+  example (a b : Prop) (p : Prop → Prop) (h : a ↔ b)
+    : p a → p b
+    := (propext h ▸ ·)
+end the
+end the_propext
+
+
+
+/- SECTION: `funext`-/
+section the_funext
+namespace the
+  -- The axiom of `fun`ction `ext`ensionality says exactly what you think
+  --  it does: the Yoneda lemma (/s; not really /s).
+  #check funext
+
+  def Set (α : Type u) : Type u := α → Prop
+  namespace Set
+    def mem (x : α) (a : Set α) := a x
+    infix:50 (priority := high) " ∈ " => mem
+
+    -- We can derive the (Z) axiom of extensionality for sets from `funext`
+    --  and `propext`.
+    theorem setext {a b : Set α} (h : ∀ (x : α), x ∈ a ↔ x ∈ b) : a = b :=
+      funext (propext $ h ·)
+    -- `setext` is really all we needed when we were trying to show `p → U = V`
+    --  in `theorem diaconescu`.
+
+    def empty : Set α := fun _ => False
+    notation (priority := high) "∅" => empty
+
+    def inter (a b : Set α) : Set α :=
+      fun x => x ∈ a ∧ x ∈ b
+    infix:70 " ∩ " => inter
+
+    theorem inter_self (a : Set α) : a ∩ a = a :=
+      setext $ fun _ => Iff.intro
+        And.left
+        (fun h => ⟨h, h⟩)
+    theorem inter_empty (a : Set α) : a ∩ ∅ = ∅ :=
+      setext $ fun _ => Iff.intro
+        And.right
+        (fun h : False => h.elim)
+    theorem inter.comm (a b : Set α) : a ∩ b = b ∩ a :=
+      setext $ fun _ => Iff.intro
+        (fun ⟨l, r⟩ => ⟨r, l⟩)
+        (fun ⟨l, r⟩ => ⟨r, l⟩)
+    theorem empty_inter (a : Set α) : ∅ ∩ a = ∅ :=
+      calc ∅ ∩ a
+        _ = a ∩ ∅ := by apply inter.comm
+        _ = ∅     := by apply inter_empty
+  end Set
+end the
+end the_funext
+
+
+
+/- SECTION: Quotients -/
