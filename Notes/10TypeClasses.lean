@@ -107,4 +107,6 @@ section ofn
     ofNat := ⟨n, 1, fun h => nomatch h⟩
   instance : ToString Rational where
     toString r := s!"{r.numerator} / {r.denominator}"
+  #eval (2 : Rational) -- *`2 / 1`*
+  #check (nat_lit 2)
 end ofn
