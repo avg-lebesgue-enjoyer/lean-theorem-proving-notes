@@ -688,6 +688,74 @@ section ex_5
       | _    => 0
     #eval sampleExpr.eval sampleSubs -- *`47`*, as expected
 
-    -- FIXME: TODO: The rest of the exercise, from `def simpConst` onwards
+    def simpConst : Expr → Expr
+      | plus  (const c) (const d) => const (c + d)
+      | times (const c) (const d) => const (c * d)
+      | e                         => e
+
+    def fuse : Expr → Expr
+      | plus  e₁ e₂ => simpConst $ plus  (fuse e₁) (fuse e₂)
+      | times e₁ e₂ => simpConst $ times (fuse e₁) (fuse e₂)
+      | e           => e
+
+    #eval sampleExpr.fuse.eval sampleSubs -- *`47`*, as expected
+
+    theorem simpConst_eq
+      : ∀ e : Expr, e.simpConst.eval = e.eval
+      -- Base cases
+      | const c => rfl
+      | var   v => rfl
+      -- Recursive steps
+      | plus  e₁         e₂         => by
+        unfold simpConst ; split
+        case h_1 c d h_eq =>
+          injection h_eq with h_e₁ h_e₂
+          rw [h_e₁, h_e₂]
+          rfl
+        case h_2 c₁ c₂ h_eq =>
+          injection h_eq
+        case h_3 _ _ _ =>
+          rfl
+      | times e₁ e₂ => by
+        unfold simpConst ; split -- This handles overlapping patterns nicely, introducing the necessary "later matches don't overlap" hypotheses. According to this blog post (https://lean-lang.org/blog/2024-5-17-functional-induction/), *functional induction* in Lean 4.8 should handle this too
+        case h_1 c₁ c₂ h_eq =>
+          injection h_eq
+        case h_2 c d h_eq =>
+          injection h_eq with h_e₁ h_e₂
+          rw [h_e₁, h_e₂]
+          rfl
+        case h_3 _ _ _ =>
+          rfl
+
+    theorem fuse_eq
+      : ∀ e : Expr, e.fuse.eval = e.eval
+      -- Base cases
+      | const c => rfl
+      | var v => rfl
+      -- Recursive cases
+      | plus e₁ e₂ => by
+        apply funext
+        intro subs
+        unfold fuse
+        rw [simpConst_eq]
+        calc (e₁.fuse.plus e₂.fuse).eval subs
+          _ = e₁.fuse.eval subs + e₂.fuse.eval subs
+            := rfl
+          _ = e₁.eval subs + e₂.eval subs
+            := by rw [fuse_eq e₁, fuse_eq e₂]
+          _ = (e₁.plus e₂).eval subs
+            := rfl
+      | times e₁ e₂ => by
+        apply funext
+        intro subs
+        unfold fuse
+        rw [simpConst_eq]
+        calc (e₁.fuse.times e₂.fuse).eval subs
+          _ = e₁.fuse.eval subs * e₂.fuse.eval subs
+            := rfl
+          _ = e₁.eval subs * e₂.eval subs
+            := by rw [fuse_eq e₁, fuse_eq e₂]
+          _ = (e₁.times e₂).eval subs
+            := rfl
   end Expr
 end ex_5
