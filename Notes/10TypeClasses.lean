@@ -105,4 +105,6 @@ section ofn
     isLegal     : denominator ≠ 0
   instance : OfNat Rational n where
     ofNat := ⟨n, 1, fun h => nomatch h⟩
+  instance : ToString Rational where
+    toString r := s!"{r.numerator} / {r.denominator}"
 end ofn
