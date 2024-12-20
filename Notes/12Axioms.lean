@@ -40,7 +40,7 @@ section haha_prelude
                 (∀ (x : α), f x = g x) → f = g)
     (p : Prop)
     : p ∨ ¬p
-    := -- I did this as an exercise when I should've been sleeping. It took at least 1.5 hours, and I'm very tired...
+    := -- As an exercise, I did the formalisation of what Wikipedia outlined the proof. This happend while I should've been sleeping. It took at least 1.5 hours, and I'm very tired...
       let U : Set Bool := fun x => (x = false) ∨ p
       let V : Set Bool := fun x => (x = true)  ∨ p
       have h_U_nonempty : ∃ x : Bool, U x := by exists false ; unfold U ; apply Or.inl ; rfl
