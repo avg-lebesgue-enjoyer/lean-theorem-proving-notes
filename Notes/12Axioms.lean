@@ -125,4 +125,7 @@ section haha_prelude
         Combining this with `p ∨ (f U ≠ f V)` yields `p ∨ ¬p`, as desired.
       -/
   #print axioms diaconescu -- *`'diaconescu' does not depend on any axioms`* :)
+
+  -- NOTE: The upshot of this exposition is that **`Classical.choice`** is really the
+  --  "fundamental" axiom in classical logic, at least in Lean (not `Classical.em`!).
 end haha_prelude
