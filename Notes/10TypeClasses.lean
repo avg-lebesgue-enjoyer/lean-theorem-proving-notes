@@ -310,5 +310,4 @@ end decidable_props_lol
 
 /- SECTION: The rest -/
 -- The rest of this part of the `@src` was stuff that I already knew from `Functional Programming in Lean4`,
---  or that had already appeared in this chapter of the `@src`.
--- There were no exercises at the end of the chapter.
+--  or that had already appeared in this chapter of the `@src`. There were no exercises at the end of the chapter.
