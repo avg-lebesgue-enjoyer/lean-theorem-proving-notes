@@ -56,4 +56,53 @@ end type_classes
 
 
 /- SECTION: Chaining Instances -/
--- Gaming
+section chain
+  namespace gaming
+    instance [Inhabited α] [Inhabited β] : Inhabited (α × β) where
+      default := (default, default)
+    #eval (default : Nat × Bool) -- *`(0, true)`*
+
+    instance
+      {α : Type u_src} {β : Type u_tgt}
+      [Inhabited β]
+      : Inhabited (α → β)
+    where
+      default := fun _ => default
+
+    instance : Inhabited (List α) where default := []
+    instance [Inhabited α] : Inhabited (α ⊕ β) where default := .inl default
+    instance [Inhabited β] : Inhabited (α ⊕ β) where default := .inr default
+
+    #print inferInstance
+    -- *`@[reducible] def inferInstance.{u} `*
+    -- *` : {α : Sort u} → [i : α] → α      `*
+    -- *` := fun {a} [i : α] => i           `*
+
+    def foo : Inhabited (Nat × Nat) := inferInstance  -- Exposes an instance
+    example : foo.default = (default, default) := rfl -- Theorem showing us that the instance is what you think it is
+  end gaming
+end chain
+
+
+
+/- SECTION: ToString -/
+section tos
+  structure Person where
+    name : String
+    age  : Nat
+  instance : ToString Person where
+    toString p := s!"{p.name} (aged {p.age})"
+  #eval toString { name := "Leo", age := 666 : Person } -- *`"Leo (aged 666)"`*
+end tos
+
+
+
+/- SECTION: OfNat -/
+section ofn
+  structure Rational where
+    numerator   : Int
+    denominator : Nat
+    isLegal     : denominator ≠ 0
+  instance : OfNat Rational n where
+    ofNat := ⟨n, 1, fun h => nomatch h⟩
+end ofn
