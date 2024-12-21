@@ -409,5 +409,29 @@ end fav
 
 /- SECTION: Choice -/
 section da_chooser
-  --
+  #print Classical.choice
+  #print Nonempty -- Can only eliminate into `Prop`; erases data of the *witness* to being `Nonempty`
+  -- I think these two tell you all that you need to know.
 end da_chooser
+
+
+
+/- SECTION: LEM -/
+section da_lem
+  -- Damnit, @src proves Diaconescu's theorem... I didn't need to do it myself--
+  -- The use of choice is pretty much the same as in my version of the proof, *I think*, if you forgive
+  --  the types being completely different.
+
+  -- NOTE: `Classical` logic gives us `prop`ositional `Complete`ness, which is the rule that **I**
+  --  have in my head as "classical logic":
+  open Classical in
+  theorem propComplete (a : Prop) : a = True ∨ a = False :=
+    match em a with
+    | .inl h_a  => .inl $ propext $ Iff.intro (fun _ => .intro) (fun _ => h_a)
+    | .inr h_na => .inr $ propext $ Iff.intro h_na False.elim
+  -- Consequences of `Classical.propComplete` include "proofs by truth tables".
+end da_lem
+
+-- *~end of textbook*
+-- Thanks, **Jeremy Avigad, Leonardo de Moura, Soonho Kong and Sebastian Ullrich, with contributions from the Lean Community**!
+-- (List of authors from https://lean-lang.org/theorem_proving_in_lean4/title_page.html).
