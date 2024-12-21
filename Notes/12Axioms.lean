@@ -198,3 +198,216 @@ end the_funext
 
 
 /- SECTION: Quotients -/
+section fav
+  -- Given `r : α → α → Prop`, `Quot r` is a `Sort`.
+  #print Quot -- *`Quotient primitive Quot.{u} : {α : Sort u} → (α → α → Prop) → Sort u`*
+  -- Given `a : α`, `Quot.mk r a` is a term of type `Quot r`
+  #print Quot.mk -- *`Quotient primitive Quot.mk.{u} : {α : Sort u} → (r : α → α → Prop) → α → Quot r`*
+  -- The induction principle says that to prove a propositon `β` on all of `Quot r`, you need only prove it on each
+  --  constructor return value `Quot.mk r a`.
+  #print Quot.ind -- *`Quotient primitive Quot.ind.{u} : ∀ {α : Sort u} {r : α → α → Prop} {β : Quot r → Prop}, `*
+                  -- *` (∀ (a : α), β (Quot.mk r a)) → ∀ (q : Quot r), β q`*
+  -- A function `f : α → β` which respects the relation `r` lifts to a function `Quot {α} r → β`. Interestingly, the
+  --  codomain here is not dependent.
+  #print Quot.lift -- *`Quotient primitive Quot.lift.{u_src, u_tgt} : {α : Sort u_src} {r : α → α → Prop} → {β : Sort u_tgt}`*
+                   -- *`  → (f : α → β) → (∀ (a b : α), r a b → f a = f b) → Quot r → β`*
+
+  -- Extensionality for quotients, basically. This is the axiom that says "`Quot` is a *quotient*".
+  #print Quot.sound -- *`axiom Quot.sound.{u} : ∀ {α : Sort u} {r : α → α → Prop} {a b : α}, r a b → Quot.mk r a = Quot.mk r b`*
+
+  /- NOTE: Universal property of the quotient. Can't even be *stated* without `Quot.sound`!
+    *`@[reducible] protected def Quot.rec.{u_src, u_tgt}              `*
+    *`  : {α : Sort u_src}                                            `*
+    *`  → {r : α → α → Prop}                                          `*
+    *`  → {motive : Quot r → Sort u_tgt}                              `*
+    *`  → (f : (a : α) → motive (Quot.mk r a))                        `*  -- We know what to do on each thing of the form `Quot.mk r a`
+    *`  → (∀ (a b : α) (p : r a b), (Quot.sound p) ▸ f a = f b)       `*  -- ^^and that thing respects `r`
+    *`  → (q : Quot r) → motive q                                     `*  -- ~> gives us a (dependent) function out of the quotient.
+    *`  := fun {α} {r} {motive} f h q =>                              `*
+    *`    Eq.ndrecOn (Quot.liftIndepPr1 f h q)                        `*
+    *`      (Quot.lift (Quot.indep f) (Quot.indepCoherent f h) q).snd `*
+  -/
+  #print Quot.rec -- Not a "from on high" recursor; this depends on the axioms `Quot.sound` and other `Quotient primitive`s.
+  #print Eq.ndrecOn
+  #print Quot.indep
+
+  section z_mod_7
+  namespace z_mod_7
+    def mod7 (x y : Nat) : Prop := x % 7 = y % 7 -- Kernel of `(· % 7)`
+    #check Quot mod7 -- *`: Type`*
+    #check (Quot.mk mod7 4) -- *`: Quot mod7`*
+
+    def f (x : Nat) : Bool := x % 7 = 0 -- Identifies zero in the quotient
+    theorem f_respects (a b : Nat) (h : mod7 a b) : f a = f b := by rw [f, f, h]
+    #check Quot.lift f f_respects -- *`: Quot mod7 → Bool`*
+
+    -- NOTE: `Quot.lift` does what it's supposed to do
+    example (a : Nat) : Quot.lift f f_respects (Quot.mk mod7 a) = f a := rfl
+    example
+      {α : Sort u} {β : Sort u'}
+      {r : α → α → Prop}
+      (f : α → β)
+      (h : ∀ (x y : α), r x y → f x = f y)
+      : ∀ (x : α), Quot.lift f h (Quot.mk r x) = f x
+      :=
+        fun _ => rfl
+  end z_mod_7
+  end z_mod_7
+
+  section erm_what_the_setoid
+    -- A **Setoid** is a type ("set") with a specified equivalence relation of interest.
+    class Setoid'.{u} (α : Sort u) where
+      r : α → α → Prop
+      iseqv : Equivalence r
+    -- `Quotient`s are best behaved when they're by *equivalence* relations. Really, this just means that
+    --  we don't need to wrap each mention of the underlying relation in a "make this a freely generated
+    --  equivalence relation pls" whenever we state and prove results about `Quot`s.
+    -- NOTE: `Quot r ≃ Quot (eqv. rel. freely gen. by r)` is really easy to see
+    #print Quotient -- *`def Quotient.{u} : {α : Sort u} → Setoid α → Sort u := fun {α} s => Quot Setoid.r`*
+
+    namespace Setoid'
+      instance {α : Sort u} [Setoid' α] : HasEquiv α := ⟨Setoid'.r⟩ -- This supports the infix notation `≈` instead of prefix `Setoid.r`.
+      variable {α : Sort u} [Setoid' α]
+
+      theorem refl : ∀ (x : α), x ≈ x := iseqv.refl
+      theorem symm : ∀ {x y : α}, x ≈ y → y ≈ x :=
+        fun {x y : α} (h : x ≈ y) => iseqv.symm h
+      theorem trans : ∀ {x y z : α}, x ≈ y → y ≈ z → x ≈ z :=
+        fun {x y z : α} (h_xy : x ≈ y) (h_yz : y ≈ z) => iseqv.trans h_xy h_yz
+    end Setoid'
+
+    -- NOTE: `Quotient.mk`, `Quotient.sound` etc. are restrictions of `Quot.mk`, `Quot.sound` etc. to `Quotient`.
+
+    -- NOTE: `⟦x⟧ := Quot.mk Setoid.r x`
+    #print Quotient.exact -- *`: ∀ {α : Sort u} {s : Setoid α} {a b : α}, Quotient.mk s a = Quotient.mk s b → a ≈ b`*
+  end erm_what_the_setoid
+
+  section unordered_pairs
+    private def squiggle {α : Type u} (p q : α × α) : Prop :=
+      (p.1 = q.1 ∧ p.2 = q.2) ∨ (p.1 = q.2 ∧ p.2 = q.1)
+    infix:50 " ~ " => squiggle
+
+    private theorem squiggle.refl {α : Type u} : ∀ (p : α × α), p ~ p := fun _ => .inl ⟨rfl, rfl⟩
+    private theorem squiggle.symm {α : Type u} : ∀ {p q : α × α}, p ~ q → q ~ p :=
+      fun {_} {_} h =>
+      match h with
+      | .inl ⟨ll, rr⟩ => .inl ⟨ll.symm, rr.symm⟩
+      | .inr ⟨lr, rl⟩ => .inr ⟨rl.symm, lr.symm⟩
+    private theorem squiggle.trans {α : Type u} : ∀ {p q r : α × α}, p ~ q → q ~ r → p ~ r :=
+      fun {_} {_} {_} h_pq h_qr =>
+      match h_pq, h_qr with
+      | .inl ⟨p1q1, p2q2⟩, .inl ⟨q1r1, q2r2⟩ => .inl ⟨p1q1.trans q1r1, p2q2.trans q2r2⟩
+      | .inl ⟨p1q1, p2q2⟩, .inr ⟨q1r2, q2r1⟩ => .inr ⟨p1q1.trans q1r2, p2q2.trans q2r1⟩
+      | .inr ⟨p1q2, p2q1⟩, .inl ⟨q1r1, q2r2⟩ => .inr ⟨p1q2.trans q2r2, p2q1.trans q1r1⟩
+      | .inr ⟨p1q2, p2q1⟩, .inr ⟨q1r2, q2r1⟩ => .inl ⟨p1q2.trans q2r1, p2q1.trans q1r2⟩
+    private theorem squiggle.is_equivalence {α : Type u} : Equivalence (@squiggle α) :=
+      { refl := squiggle.refl, symm := squiggle.symm, trans := squiggle.trans }
+
+    instance unorderedPairSetoid (α : Type u) : Setoid (α × α) where
+      r := squiggle ; iseqv := squiggle.is_equivalence
+    def UnorderedPair (α : Type u) : Type u := Quotient (unorderedPairSetoid α)
+    namespace UnorderedPair
+      def mk {α : Type u} (a b : α) : UnorderedPair α := Quotient.mk' (a, b)
+      local notation "{ " p ", " q " }" => mk p q
+
+      theorem mk_swap {α : Type u} : ∀ (a b : α), {a, b} = {b, a} :=
+        fun a b => Quotient.sound (show (a, b) ~ (b, a) from Or.inr ⟨rfl, rfl⟩)
+
+      private def mem_fn {α : Type u} (a : α) : α × α → Prop
+        | (x, y) => x = a ∨ y = a
+      private theorem mem_swap {α : Type u} {a : α} : ∀ {p : α × α}, mem_fn a p = mem_fn a ⟨p.2, p.1⟩
+        | ⟨p1, p2⟩ => by
+          apply propext
+          constructor <;> (rw [mem_fn, Or.comm] ; exact id)
+      private theorem mem_respects
+        {α : Type u}
+        {p q : α × α}
+        (a : α)
+        : p ~ q → mem_fn a p = mem_fn a q
+        | .inl ⟨p1q1, p2q2⟩ => by simp_all [mem_fn]
+        | .inr ⟨p1q2, p2q1⟩ => by have : q = ⟨p.snd, p.fst⟩ := (by simp_all) ; rw [this] ; apply mem_swap
+
+      def mem {α : Type u} (a : α) : UnorderedPair α → Prop :=
+        Quot.lift (mem_fn a) (fun _ _ e => mem_respects a e)
+      infix:50 (priority := high) " ∈ " => mem
+      theorem mem_mk_left  {α : Type u} (a b : α) : a ∈ {a, b} := Or.inl rfl
+      theorem mem_mk_right {α : Type u} (a b : α) : b ∈ {a, b} := Or.inr rfl
+      theorem mem_or_mem_of_mem_mk {a b c : α} : c ∈ {a, b} → c = a ∨ c = b := by
+        intro h
+        cases h with
+        | inl h' => exact .inl h'.symm
+        | inr h' => exact .inr h'.symm
+    end UnorderedPair
+
+    -- QUESTION: Why does `funext` follow from `Quot.sound`?
+    section why_funext
+      -- The idea is that `funext` is a lifting of "equal everywhere" to "equal", so we prove it by
+      --  lifting out of a "quotient by 'equal everywhere'".
+      -- If we make "equal everywhere" into an equivalence relation, then we can go via the quotient;
+      --  *the action of passing to the quotient is trivial though* because of a cool trick involving
+      --  function application.
+      -- Since function application is *local* (i.e. only depends on pointwise behaviour; *i.e. only*
+      --  *depends on the function **up to extensionality***), it descends to the quotient (by
+      --  extensionality), and by definitional equality, the action of `apply f` on the quotient is the
+      --  same as `f`. In the quotient, two functions equal-up-to-extensionality are regarded as equal
+      --  by `Quot.sound`. These two facts mean that we can go into the quotient via `lift`ing `apply`,
+      --  exchange our two extistentionally-the-same functions by `Quot.sound`, and then return from the
+      --  quotient by `lift`ing `apply` again.
+      def equal_everywhere {α : Sort u} {β : α → Sort u'} (f g : (a : α) → β a) : Prop := ∀ (a : α), f a = g a
+      theorem equal_everywhere.iseqv {α : Sort u} {β : α → Sort u'} : Equivalence (@equal_everywhere α β) where
+        refl := fun _ _ => rfl
+        symm := fun {f} {g} (h : ∀ (a : α), f a = g a) a => (h a).symm
+        trans := fun h₁₂ h₂₃ a => (h₁₂ a).trans (h₂₃ a)
+      instance fun_up_2_ext (α : Sort u) (β : α → Sort u') : Setoid ((a : α) → β a) where
+        r := equal_everywhere
+        iseqv := equal_everywhere.iseqv
+      -- Quotient
+      def FunModExt (α : Sort u) (β : α → Sort u') : Sort (imax u u') := @Quotient ((a : α) → β a) (fun_up_2_ext α β)
+      notation:max α " ~> " β " /Ext" => FunModExt α β
+      example : (α ~> β /Ext) = FunModExt α β := rfl -- ok yep it worked thank god
+      namespace FunModExt
+        def mk {α : Sort u} {β : α → Sort u'} (f : (a : α) → β a) : (α ~> β /Ext) := Quotient.mk' f
+        theorem ext_eq_implies_equal_in_quotient
+          {α : Sort u} {β : α → Sort u'}
+          (f g : (a : α) → β a)
+          (h : ∀ (a : α), f a = g a)
+          : FunModExt.mk f = FunModExt.mk g
+          := Quotient.sound h -- *`@Quotient.sound ((a : α) → β a) (fun_up_2_ext α β) f g h`*
+        -- NOTE: Function application at any given point respects the extensional equivalence relation
+        def apply {α : Sort u} {β : α → Sort u'} : ((x : α) → β x) → (a : α) → β a := id
+        theorem apply_respects
+          {α : Sort u} {β : α → Sort u'}
+          (x : α)
+          (f g : (a : α) → β a)
+          : f ≈ g → apply f x = apply g x
+          := (· x)
+        def gaming
+          {α : Sort u} {β : α → Sort u'}
+          : (α ~> β /Ext) → (x : α) → β x
+          := fun qf x => Quotient.lift (apply · x) (α := (a : α) → β a) (apply_respects x) qf
+        theorem gaming_down_to_earth
+          {α : Sort u} {β : α → Sort u'}
+          (f : (a : α) → β a)
+          : gaming (FunModExt.mk f) = f
+          := rfl
+      end FunModExt
+      -- NOTE: Here's a proof of `funext` which relies on `Quot.sound`.
+      theorem funext'
+        {α : Sort u} {β : α → Sort u'}
+        (f g : (a : α) → β a)
+        (h : ∀ (a : α), f a = g a)
+        : f = g
+        := calc
+          f = FunModExt.gaming (FunModExt.mk f) := rfl
+          _ = FunModExt.gaming (FunModExt.mk g) := congrArg FunModExt.gaming $ FunModExt.ext_eq_implies_equal_in_quotient f g h
+          _ = g                                 := rfl
+    end why_funext
+  end unordered_pairs
+end fav
+
+
+
+/- SECTION: Choice -/
+section da_chooser
+  --
+end da_chooser
