@@ -35,7 +35,7 @@ section haha_prelude
                 X.isNonempty → (∀ (Y : Set α) (_ : X Y), Y.isNonempty)
                 → ∃ (f : (x : Set α) → X x → α),
                     ∀ (x : Set α) (h : X x), x (f x h))
-    (propext : ∀ {p q : Prop}, (p ↔ q) → (p = q)) -- NOTE: Not sure where propositional extensionality got used during the proof. I *suspect* that `simp` buries such an application under the hood somewhere
+    (propext : ∀ {p q : Prop}, (p ↔ q) → (p = q))
     (funext : ∀ {α : Type} {β : α → Type} {f g : (x : α) → β x},
                 (∀ (x : α), f x = g x) → f = g)
     (p : Prop)
